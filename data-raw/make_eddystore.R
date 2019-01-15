@@ -24,7 +24,7 @@ system.time(check())
 # save(projlonlat, projOSGB, projUTM, file = "eddystore.RData")
 #load(file = "eddystore.RData", verbose = TRUE)
 
-create("eddystore") # if it doesn't already exist
+#create("eddystore") # if it doesn't already exist
 # Add functions in files to R/ directory 
 
 #devtools::use_data(projlonlat, projOSGB, projUTM, overwrite = TRUE)
@@ -53,20 +53,8 @@ system.time(check())
 
 setwd("..")
 install("eddystore")
-install.packages("./eddystore_0.1.tar.gz", repos = NULL, type="source")
-library(eddystore)
-?eddystore
-?projlonlat
-?initialise_grid
-?calculate_footprint
-?test_footprint
-grid <- initialise_grid(towerLon_degE= -3.5, towerLat_degN=56.5, crs=projOSGB, height=3, res=1, ncol=200)
-grid <- initialise_grid(towerLon_degE= -3.5, towerLat_degN=56.5, crs=projOSGB, height=3, res=10, ncol=20)
-r_fp <- calculate_footprint(grid, speed=3, direction=120, uStar=0.2, zol=0.5, sigmaV=0.4)
-str(r_fp)
-test_footprint(grid)
-# need to add writeNetCDF / PNG functions
-# need to add ggmap functions
-# add proj to file names, so either read correctly
-# time reprojecting - could be done dynamically to save 100 MB?
+#install.packages("./eddystore_0.1.tar.gz", repos = NULL, type="source")
+
 detach("package:eddystore", unload=TRUE)
+.libPaths()
+remove.packages("eddystore")

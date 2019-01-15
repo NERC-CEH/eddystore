@@ -1,18 +1,64 @@
-## ----eddystore_pkg, eval=TRUE------------------------------------------------
-#' Parallel processing of eddy covariance data on JASMIN.
-#'
-#' eddystore allows you to set up and run processing jobs
-#' to calculate eddy covariance fluxes using eddypro on JASMIN.
-"_PACKAGE"
-#> [1] "_PACKAGE"
+rm(list=ls(all=TRUE))
+library(eddystore)
+# library(readxl)
+# library(dplyr)
+# library(stringr)
+getwd()
+#setwd("./eddystore/data-raw/")
 
-#' Collate essential output files
-#'
-#' Note that curently "EasterBush" is hard-coded in the path - need to pass path argument
-#' This function collates all the essential output files.
-#' @param job_time A character string for the time the run was started, used to identify the relevant files.
-#' @export
+?eddystore
+?makeDateIntervals
+?adjustIntervals
+?writeEddyproProcFilesForIntervals
+?writeJobFileForIntervals
 
+# Processing one year of data took 50 mins with 100 processors (11/10/2018)
+# Processing one year of data took 19 mins with 200 processors (12/10/2018)
+# Processing one year of data took 29 mins with 365 processors (12/10/2018)
+# Processing one year of data took ~300 mins with 1 processor
+# Speed-up = 300/20 = 15
+# time_taken <- c(300, 50, 19, 29)
+# n_cpu <- c(1, 100, 200, 365)
+# plot(n_cpu, time_taken)
+
+
+df_proc <- read_excel("../data-raw/eddystore_proc_table.xlsx")
+str(df_proc)
+
+# how many intervals to split processing run into
+nIntervals = 4
+# station for processing run
+stationID_proc <- "EasterBush"
+# processing configuration for processing run
+procID_proc <- "CO2_H2O"
+# start/end dates for processing run
+startDate_proc <- "2006-12-28 00:00"
+endDate_proc   <- "2013-02-01 23:30"
+startDate_proc <- as.POSIXct(strptime(startDate_proc, "%Y-%m-%d %H:%M"), tz = "UTC")
+endDate_proc   <- as.POSIXct(strptime(endDate_proc,   "%Y-%m-%d %H:%M"), tz = "UTC")
+startDate_proc; endDate_proc
+difftime(endDate_proc, startDate_proc, units = "days")
+
+intervals <- makeDateIntervals(startDate_proc, endDate_proc, nIntervals)
+intervals$startDate
+intervals$endDate
+
+test <- adjustIntervals(stationID_proc, procID_proc, intervals)
+intervals <- test
+
+eddyproProcFileName <- "N:/0Peter/curr/ECsystem/eddypro/jasmin/eddystore/stations/test/ini/processing.eddypro"
+eddyproProcFileName <- "/group_workspaces/jasmin2/eddystore/stations/EB_test/proc/processing.eddypro"
+eddyproProcFileName <- "/group_workspaces/jasmin2/eddystore/stations/EasterBush/proc/processing.eddypro"
+v_EddyproProcFileNames <- writeEddyproProcFilesForIntervals(eddyproProcFileName, intervals)
+jobFileName <- writeJobFileForIntervals(eddyproProcFileName, nIntervals)
+jobFileName
+cmd <- paste0("bsub < ", jobFileName)
+cmd
+# submit the jobs and get the time to identify the output files from this batch
+err <- system(cmd); job_time <- Sys.time()
+err; job_time
+
+## curently "EasterBush" is hard-coded in the path
 get_essential_output_df <- function(job_time){
   na.strings = c("NAN", "7999", "-7999","-999","999","9999.99", "-9999.0", "-9999.0000000000000","9999","9999","-9999")
   job_time_ch <- str_split(job_time, "[-: ]")[[1]]
@@ -36,14 +82,7 @@ get_essential_output_df <- function(job_time){
   return(df_essn)
 }
 
-#' Collate full output files - but not yet working for collating multiple job files
-#'
-#' "full output" files are harder to read - header is on line 2, data on line 4: use readr::read_csv instead:
-#' This function collates all the full output files.
-#' This function collates all the full output files.
-#' @param fname A character string for the time the run was started, used to identify the relevant files.
-#' @export
-
+# "full output" files are harder to read - header is on line 2, data on line 4: use readr::read_csv instead:
 read_full_output <- function(fname){
   df <- readLines(fname)
   # remove first and third lines, leaving header (line 2) and data (line 4 onwards)
@@ -52,22 +91,31 @@ read_full_output <- function(fname){
   return(df)
 }
 
-#' Make Date Intervals
-#'
-#' This function creates a number of equally sized time intervals between 
-#' the specified start and end times.
-#' @param startDate_period A character string for the time the run was started, used to identify the relevant files.
-#' @param endDate_period A character string for the time the run was started, used to identify the relevant files.
-#' @param nIntervals An integer number of intervals to use to split the processing into.
-#' @export
-#' @seealso \code{\link{adjustIntervals}} for the adjusting this to match boundaries between processing files.
-#' @examples
-#' nIntervals = 4
-#' startDate_proc <- "2007-01-01 00:00"
-#' endDate_proc   <- "2007-12-31 23:30"
-#' startDate_proc <- as.POSIXct(strptime(startDate_proc, "%Y-%m-%d %H:%M"), tz = "UTC")
-#' endDate_proc   <- as.POSIXct(strptime(endDate_proc,   "%Y-%m-%d %H:%M"), tz = "UTC")
-#' intervals <- makeDateIntervals(startDate_proc, endDate_proc, nIntervals)
+to_match <- paste0("eddypro_job._full_output_",  YYYY, "-", mm, "-", dd, "T", HH, substr(MM, 1, 1))
+list.files(path = "./stations/EasterBush/output", pattern = to_match, full.names = TRUE)
+files_out <- list.files(path = "./stations/EasterBush/output", pattern = to_match, full.names = TRUE)
+df_full <- do.call(rbind, lapply(files_out, FUN = read_full_output))
+dim(df_full)
+head(df_full[,1:9])
+str(df_full[,1:9])
+
+df_essn <- get_essential_output_df(job_time)
+dim(df_essn)
+str(df_essn)
+
+p <- ggplot(df_essn, aes(datect, H))
+p  <- p + geom_line()
+#p  <- p + geom_point()
+p
+
+dir(path = "./stations/EasterBush/output")
+Filter(function(x) grepl("eddypro_job", x), dir(path = "./stations/EasterBush/output"))
+
+# EB_test works ok
+# EasterBush - on;y first job produced output, althopugh no errors
+# guess we need to sort out time as well as date?
+# using POSIXct time format
+
 
 makeDateIntervals <- function(startDate_period, endDate_period, nIntervals){
   periodLength <- difftime(endDate_period, startDate_period, units = "days") + 1
@@ -95,18 +143,9 @@ makeDateIntervals <- function(startDate_period, endDate_period, nIntervals){
                 endDate = endDate_interval))
 }
 
-#' Adjust Date Intervals
-#'
-#' This function adjusts the output of makeDateIntervals to match 
-#' boundaries between processing files.
-#' @param stationID_proc A character string identifying a station in the processing file table.
-#' @param procID_proc  A character string identifying a processing setup in the processing file table.
-#' @param intervals A list of the start and end times of each interval, created by makeDateIntervals.
-#' @export
-#' @seealso \code{\link{adjustIntervals}} for the adjusting this to match boundaries between processing files.
-#' @examples
-#' test <- adjustIntervals(stationID_proc, procID_proc, intervals)
-
+test <- adjustIntervals(stationID_proc, procID_proc, intervals)
+intervals <- test
+test <- adjustIntervals(stationID_proc, procID_proc, test)
 adjustIntervals <- function(stationID_proc, procID_proc, intervals){
   #i = 2
   for (i in 1:nIntervals){
@@ -135,18 +174,58 @@ adjustIntervals <- function(stationID_proc, procID_proc, intervals){
   return(intervals)
 }
 
-#' Write Eddypro Processing files for all intervals
-#'
-#' This function writes an eddypro processing file for each of the intervals specified.
-#' Should eddyproProcFileName actually be looked up in the proc table by stationID_proc, procID_proc in adjustIntervals, 
-#' and added to the object returned there?
-#' @param eddyproProcFileName A character string identifying the root eddypro file. 
-#' @param intervals A list of the start and end times of each interval, created by makeDateIntervals.
-#' @export
-#' @seealso \code{\link{adjustIntervals}} for the adjusting this to match boundaries between processing files.
-#' @examples
-#' eddyproProcFileName <- "/group_workspaces/jasmin2/eddystore/stations/EasterBush/proc/processing.eddypro"
-#' v_EddyproProcFileNames <- writeEddyproProcFilesForIntervals(eddyproProcFileName, intervals)
+df_b <- data.frame(
+  interval = 1:nIntervals,
+  start = intervals$startDate, 
+  end  = intervals$endDate)
+#df_b <- gather(df_b, interval, value = date)
+df_b <- melt(df_b, id.vars = "interval", value.name = "date") 
+
+df_b$date <- as.POSIXct(df_b$date, origin = "1970-01-01", tz = "GMT")
+df_b$y <- 0
+df_b$y[df_b$variable == "end"] <- 0.75
+
+df_a <- data.frame(
+  interval = 1:nIntervals,
+  start = test$startDate, 
+  end   = test$endDate)
+df_a <- melt(df_a, id.vars = "interval", value.name = "date")
+df_a$date <- as.POSIXct(df_a$date, origin = "1970-01-01", tz = "GMT")
+df_a$y <- 0
+df_a$y[df_a$variable == "end"] <- 1
+
+p <- ggplot(df_b, aes(date, y)) 
+p <- p + geom_vline(data = dfs, aes(xintercept = startDate), size = 3)
+p <- p + geom_line(colour = "blue")
+p <- p + geom_line(data = df_a, colour = "red")
+p
+ 
+# using Date
+# makeDateIntervals <- function(startDate_ch, endDate_ch, nIntervals){
+  # startDate_period <- as.Date(startDate_ch, format = "%Y-%m-%d")
+  # endDate_period   <- as.Date(endDate_ch, format = "%Y-%m-%d")
+  # periodLength <- difftime(endDate_period, startDate_period, units = "days") + 1
+  # # make sure periods are at least one day long, so we dont have more periods thn days
+  # if (nIntervals > as.integer(periodLength)) nIntervals <- min(as.integer(intervalLength), nIntervals)
+
+  # intervalLength <- periodLength / nIntervals
+  # # create a sequence of dates
+  # startDate_interval <- seq(startDate_period, endDate_period, length = (nIntervals+1))[1:nIntervals]
+  # endDate_interval   <- seq(startDate_period, endDate_period, length = nIntervals+1)[2:(nIntervals+1)] - 1
+
+  # for (i in 2:nIntervals){
+    # startDate_interval[i] <- startDate_interval[i-1] + intervalLength
+  # }
+
+  # for (i in 1:(nIntervals-1)){
+    # endDate_interval[i]   <- startDate_interval[i+1] - 1
+  # }
+  # endDate_interval[nIntervals] <- endDate_period
+  # # startDate_interval; endDate_interval
+  # # difftime(endDate_interval, startDate_interval, units = "days")
+  # return(list(startDate = startDate_interval, 
+                # endDate = endDate_interval))
+# }
 
 writeEddyproProcFilesForIntervals <- function(eddyproProcFileName, intervals){
   nIntervals <- length(intervals$startDate)
@@ -188,19 +267,6 @@ writeEddyproProcFilesForIntervals <- function(eddyproProcFileName, intervals){
   return(eddyproProcFileName_int)
 }
 
-#' Write LOTUS batch job files for all intervals
-#'
-#' This function writes a LOTUS batch job file for each of the intervals specified.
-#' Should eddyproProcFileName actually be looked up in the proc table by stationID_proc, procID_proc in adjustIntervals, 
-#' and added to the object returned there?
-#' @param eddyproProcFileName A character string identifying the root eddypro file. 
-#' @param nIntervals An integer number of intervals to use to split the processing into.
-#' @export
-#' @seealso \code{\link{adjustIntervals}} for the adjusting this to match boundaries between processing files.
-#' @examples
-#' jobFileName <- writeJobFileForIntervals(eddyproProcFileName, nIntervals)
-#' jobFileName
-
 writeJobFileForIntervals <- function(eddyproProcFileName, nIntervals){
   # break the full path into dirnames
   dir_name <- str_split(eddyproProcFileName, "/")[[1]]
@@ -234,13 +300,14 @@ writeJobFileForIntervals <- function(eddyproProcFileName, nIntervals){
   return(jobFileName)
 }
 
-# run_ep_job <- function(siteID, startDate_ch, endDate_ch, nIntervals = 1){
-  # # get EddyproProcFileName from database
-  # intervals <- makeDateIntervals(startDate_ch, endDate_ch, nIntervals)
-  # v_EddyproProcFileNames <- writeEddyproProcFilesForIntervals("EddyproProcFileName", intervals)
-  # writeJobFilesForIntervals(v_EddyproProcFileName, intervals)
-  # cmd <- paste(bsub < eddyjob.sh)
-  # system(cmd)
 
-  # return()
-# }
+run_ep_job <- function(siteID, startDate_ch, endDate_ch, nIntervals = 1){
+  # get EddyproProcFileName from database
+  intervals <- makeDateIntervals(startDate_ch, endDate_ch, nIntervals)
+  v_EddyproProcFileNames <- writeEddyproProcFilesForIntervals("EddyproProcFileName", intervals)
+  writeJobFilesForIntervals(v_EddyproProcFileName, intervals)
+  cmd <- paste(bsub < eddyjob.sh)
+  system(cmd)
+
+  return()
+}
