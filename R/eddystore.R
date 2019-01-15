@@ -71,7 +71,7 @@ read_full_output <- function(fname){
 
 makeDateIntervals <- function(startDate_period, endDate_period, nIntervals){
   periodLength <- difftime(endDate_period, startDate_period, units = "days") + 1
-  # make sure periods are at least one day long, so we dont have more periods thn days
+  # make sure periods are at least one day long, so we dont have more periods than days
   if (nIntervals > as.integer(periodLength)) nIntervals <- min(as.integer(intervalLength), nIntervals)
 
   intervalLength <- periodLength / nIntervals
@@ -108,31 +108,45 @@ makeDateIntervals <- function(startDate_period, endDate_period, nIntervals){
 #' test <- adjustIntervals(stationID_proc, procID_proc, intervals)
 
 adjustIntervals <- function(stationID_proc, procID_proc, intervals){
-  #i = 2
+  nIntervals <- length(intervals[[1]])
+  v_proc_filepath <- vector(mode = "character", length = nIntervals)
+  # subset to relevant rows of proc table
+  dfs <- subset(df_proc, stationID == stationID_proc &
+                         procID == procID_proc)
+  # make sure sorted in correct order
+  dfs <- arrange(dfs, startDate, endDate)
+
+  # check if there are more processing configs than intervals requested
+  if (length(dfs[,1]) > nIntervals){
+    #print(paste("You need to set nIntervals to at least", length(dfs[,1])))
+    stop(paste("You need to set nIntervals to at least", length(dfs[,1])))
+  }
+  
   for (i in 1:nIntervals){
+    #i = 2
     # match interval with proc file
-    # subset to relevant rows of proc table
-    dfs <- subset(df_proc, stationID == stationID_proc &
-                           procID == procID_proc)
-    # make sure sorted in correct order
-    dfs <- arrange(dfs, startDate, endDate)
     # find row where for start of interval
     i_start <- findInterval(intervals$startDate[i], dfs$startDate)
     # find row where for end of interval
     # left.open arg needed where dates are equal
     i_end <- findInterval(intervals$endDate[i], dfs$endDate, left.open=TRUE) + 1
-    #findInterval(intervals$endDate[i], dfs$endDate, left.open=TRUE) + 1
+
     # if rows are not same, interval spans two or more processing configs
-    diff_proc <- i_end - i_start
-    if (diff_proc == 0) print("No probs")
-    if (diff_proc == 1) {
-      print("Proc spanning")
+    if (i_end == i_start){
+      print("The interval is within a single processing configurations; no adjustment needed.")
+      v_proc_filepath[i] <- dfs$proc_filepath[i_start]
+    }
+    if (i_end != i_start) {
+      print("The original interval spanned two processing configurations; adjusting intervals accordingly.")
       # adjust start of this interval and end of previous interval
-      intervals$startDate[i] <- dfs$startDate[(i_start+1)]
+      intervals$startDate[i]    <- dfs$startDate[(i_start+1)]
       intervals$endDate[(i-1)]  <- dfs$endDate[(i_end-1)]
+      v_proc_filepath[i]        <- dfs$proc_filepath[(i_start+1)]
     }
   }
-  return(intervals)
+  return(list(startDate = intervals$startDate, 
+                endDate = intervals$endDate,
+          proc_filepath = v_proc_filepath))
 }
 
 #' Write Eddypro Processing files for all intervals
@@ -149,12 +163,12 @@ adjustIntervals <- function(stationID_proc, procID_proc, intervals){
 #' v_EddyproProcFileNames <- writeEddyproProcFilesForIntervals(eddyproProcFileName, intervals)
 
 writeEddyproProcFilesForIntervals <- function(eddyproProcFileName, intervals){
+  # make a vector of file names
   nIntervals <- length(intervals$startDate)
   eddyproProcFileName_int <- vector(mode = "character", length = nIntervals)
     
   eddyproProcFile <- readLines(file(eddyproProcFileName, "r+"))
-  str(eddyproProcFile)
-  # make a vector of file names
+  #str(eddyproProcFile)
   
   for (i in 1:nIntervals){
     # make .eddypro file name for interval 

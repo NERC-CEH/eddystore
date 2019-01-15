@@ -49,6 +49,7 @@ intervals <- test
 eddyproProcFileName <- "N:/0Peter/curr/ECsystem/eddypro/jasmin/eddystore/stations/test/ini/processing.eddypro"
 eddyproProcFileName <- "/group_workspaces/jasmin2/eddystore/stations/EB_test/proc/processing.eddypro"
 eddyproProcFileName <- "/group_workspaces/jasmin2/eddystore/stations/EasterBush/proc/processing.eddypro"
+eddyproProcFileName <- "/gws/nopw/j04/eddystore/stations/EasterBush/proc/processing.eddypro"
 v_EddyproProcFileNames <- writeEddyproProcFilesForIntervals(eddyproProcFileName, intervals)
 jobFileName <- writeJobFileForIntervals(eddyproProcFileName, nIntervals)
 jobFileName
@@ -311,3 +312,9 @@ run_ep_job <- function(siteID, startDate_ch, endDate_ch, nIntervals = 1){
 
   return()
 }
+
+library(RCurl)
+library(foreign)
+url <- "https://raw.githubusercontent.com/NERC-CEH/eddystore_procdata/master/eddystore_proc_table.csv"
+tmp_txt <- getURL(url)                
+df_proc <- read.csv(textConnection(tmp_txt))
