@@ -43,6 +43,15 @@ intervals <- makeDateIntervals(startDate_proc, endDate_proc, nIntervals)
 intervals$startDate
 intervals$endDate
 
+intervals$startDate <- format(trunc(intervals$startDate, "hour"))
+intervals$endDate <-
+intervals$startDate  + 60*30
+format(trunc(intervals$startDate + 60*30, "hour"))
+format((intervals$startDate, "year"))
+format(ceiling(intervals$endDate, "hour"))
+sapply(intervals$endDate, ceiling)
+sapply(intervals$endDate, "+", 60*30)
+
 test <- adjustIntervals(stationID_proc, procID_proc, intervals)
 intervals <- test
 

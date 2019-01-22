@@ -90,7 +90,7 @@ makeDateIntervals <- function(startDate_period, endDate_period, nIntervals){
   #startDate_interval; endDate_interval
   #difftime(endDate_interval, startDate_interval, units = "days")
   
-  ## need to check if any interval spans two processing file periods and change accordingly
+  ## need to round to nearest half-hour
   return(list(startDate = startDate_interval, 
                 endDate = endDate_interval))
 }
@@ -147,6 +147,23 @@ adjustIntervals <- function(stationID_proc, procID_proc, intervals){
   return(list(startDate = intervals$startDate, 
                 endDate = intervals$endDate,
           proc_filepath = v_proc_filepath))
+}
+
+#' Create Processing Job
+#'
+#' This function creates an eddypro processing job to be on LOTUS.
+#' @param stationID_proc A character string identifying a station in the processing file table.
+#' @param procID_proc  A character string identifying a processing setup in the processing file table.
+#' @param intervals A list of the start and end times of each interval, created by makeDateIntervals.
+#' @export
+#' @seealso \code{\link{adjustIntervals}} for the adjusting this to match boundaries between processing files.
+#' @examples
+#' test <- adjustIntervals(stationID_proc, procID_proc, intervals)
+
+createJob <- function(stationID_proc, procID_proc, startDate, endDate, nProcessors){
+  intervals <- makeDateIntervals(startDate, endDate, nProcessors)
+  test <- adjustIntervals(stationID_proc, procID_proc, intervals)
+  v_EddyproProcFileNames <- writeEddyproProcFilesForIntervals(eddyproProcFileName, intervals)
 }
 
 #' Write Eddypro Processing files for all intervals
