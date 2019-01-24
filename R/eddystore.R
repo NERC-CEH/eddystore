@@ -65,16 +65,17 @@ read_full_output <- function(fname){
 #' nIntervals = 4
 #' startDate_proc <- "2007-01-01 00:00"
 #' endDate_proc   <- "2007-12-31 23:30"
-#' startDate_proc <- as.POSIXct(strptime(startDate_proc, "%Y-%m-%d %H:%M"), tz = "UTC")
-#' endDate_proc   <- as.POSIXct(strptime(endDate_proc,   "%Y-%m-%d %H:%M"), tz = "UTC")
-#' intervals <- makeDateIntervals(startDate_proc, endDate_proc, nIntervals)
+#' startDate_period <- as.POSIXct(strptime(startDate_proc, "%Y-%m-%d %H:%M"), tz = "UTC")
+#' endDate_period   <- as.POSIXct(strptime(endDate_proc,   "%Y-%m-%d %H:%M"), tz = "UTC")
+#' intervals <- makeDateIntervals(startDate_proc, endDate_period, nIntervals)
 
 makeDateIntervals <- function(startDate_period, endDate_period, nIntervals){
   periodLength <- difftime(endDate_period, startDate_period, units = "days") + 1
+  intervalLength <- periodLength / nIntervals
   # make sure periods are at least one day long, so we dont have more periods than days
   if (nIntervals > as.integer(periodLength)) nIntervals <- min(as.integer(intervalLength), nIntervals)
-
   intervalLength <- periodLength / nIntervals
+
   # create a sequence of dates
   startDate_interval <- seq(startDate_period, endDate_period, length = (nIntervals+1))[1:nIntervals]
   endDate_interval   <- seq(startDate_period, endDate_period, length = nIntervals+1)[2:(nIntervals+1)] - 1
@@ -89,8 +90,11 @@ makeDateIntervals <- function(startDate_period, endDate_period, nIntervals){
   endDate_interval[nIntervals] <- endDate_period
   #startDate_interval; endDate_interval
   #difftime(endDate_interval, startDate_interval, units = "days")
+  halfHour <- 30*60
   
   ## need to round to nearest half-hour
+  startDate_interval <- format(trunc(startDate_interval, units="hours"))
+  
   return(list(startDate = startDate_interval, 
                 endDate = endDate_interval))
 }
@@ -144,9 +148,9 @@ adjustIntervals <- function(stationID_proc, procID_proc, intervals){
       v_proc_filepath[i]        <- dfs$proc_filepath[(i_start+1)]
     }
   }
-  return(list(startDate = intervals$startDate, 
-                endDate = intervals$endDate,
-          proc_filepath = v_proc_filepath))
+  return(list(proc_filepath = v_proc_filepath,
+                  startDate = intervals$startDate, 
+                    endDate = intervals$endDate))
 }
 
 #' Create Processing Job
@@ -154,16 +158,19 @@ adjustIntervals <- function(stationID_proc, procID_proc, intervals){
 #' This function creates an eddypro processing job to be on LOTUS.
 #' @param stationID_proc A character string identifying a station in the processing file table.
 #' @param procID_proc  A character string identifying a processing setup in the processing file table.
-#' @param intervals A list of the start and end times of each interval, created by makeDateIntervals.
+#' @param startDate_period A character string for the time the run was started, used to identify the relevant files.
+#' @param endDate_period A character string for the time the run was started, used to identify the relevant files.
+#' @param nProcessors An integer number of processors to use, equal to the number of time intervals to split the processing into.
 #' @export
 #' @seealso \code{\link{adjustIntervals}} for the adjusting this to match boundaries between processing files.
 #' @examples
-#' test <- adjustIntervals(stationID_proc, procID_proc, intervals)
+#' myJob <- createJob(stationID_proc, procID_proc, startDate, endDate, nProcessors)
 
 createJob <- function(stationID_proc, procID_proc, startDate, endDate, nProcessors){
-  intervals <- makeDateIntervals(startDate, endDate, nProcessors)
-  test <- adjustIntervals(stationID_proc, procID_proc, intervals)
-  v_EddyproProcFileNames <- writeEddyproProcFilesForIntervals(eddyproProcFileName, intervals)
+  myJob <- makeDateIntervals(startDate, endDate, nProcessors)
+  myJob <- adjustIntervals(stationID_proc, procID_proc, myJob)
+  v_EddyproProcFileNames <- writeEddyproProcFilesForIntervals(myJob)
+  jobFileName <- writeJobFileForIntervals(eddyproProcFileName, nIntervals)
 }
 
 #' Write Eddypro Processing files for all intervals
@@ -172,24 +179,24 @@ createJob <- function(stationID_proc, procID_proc, startDate, endDate, nProcesso
 #' Should eddyproProcFileName actually be looked up in the proc table by stationID_proc, procID_proc in adjustIntervals, 
 #' and added to the object returned there?
 #' @param eddyproProcFileName A character string identifying the root eddypro file. 
-#' @param intervals A list of the start and end times of each interval, created by makeDateIntervals.
+#' @param job A list of the start and end times of each interval, created by makeDateIntervals.
 #' @export
 #' @seealso \code{\link{adjustIntervals}} for the adjusting this to match boundaries between processing files.
 #' @examples
 #' eddyproProcFileName <- "/group_workspaces/jasmin2/eddystore/stations/EasterBush/proc/processing.eddypro"
 #' v_EddyproProcFileNames <- writeEddyproProcFilesForIntervals(eddyproProcFileName, intervals)
 
-writeEddyproProcFilesForIntervals <- function(eddyproProcFileName, intervals){
+writeEddyproProcFilesForIntervals <- function(job){
   # make a vector of file names
-  nIntervals <- length(intervals$startDate)
-  eddyproProcFileName_int <- vector(mode = "character", length = nIntervals)
+  nIntervals <- length(job$startDate)
+  v_eddyproProcFileName <- vector(mode = "character", length = nIntervals)
     
-  eddyproProcFile <- readLines(file(eddyproProcFileName, "r+"))
-  #str(eddyproProcFile)
-  
   for (i in 1:nIntervals){
+    # read the appropriate .eddypro file for this interval into a character vector
+    eddyproProcFile <- readLines(file(job$proc_filepath[i], "r+"))
+
     # make .eddypro file name for interval 
-    eddyproProcFileName_int[i] <- paste0(str_sub(eddyproProcFileName, start = 1, 
+    v_eddyproProcFileName[i] <- paste0(str_sub(eddyproProcFileName, start = 1, 
       end = str_length(eddyproProcFileName)-8), i, ".eddypro")
     
     # find line where "project" ID is given
@@ -213,10 +220,10 @@ writeEddyproProcFilesForIntervals <- function(eddyproProcFileName, intervals){
     # replace with interval end date
     eddyproProcFile[ind] <- paste0(str_sub(eddyproProcFile[ind], start = 1, end = 3), 
       "end_date=", intervals$endDate[i])
-    print(paste0("Writing ", eddyproProcFileName_int[i]))
-    writeLines(eddyproProcFile, con = eddyproProcFileName_int[i])
+    print(paste0("Writing ", v_eddyproProcFileName[i]))
+    writeLines(eddyproProcFile, con = v_eddyproProcFileName[i])
   }  
-  return(eddyproProcFileName_int)
+  return(v_eddyproProcFileName)
 }
 
 #' Write LOTUS batch job files for all intervals
@@ -272,6 +279,5 @@ writeJobFileForIntervals <- function(eddyproProcFileName, nIntervals){
   # writeJobFilesForIntervals(v_EddyproProcFileName, intervals)
   # cmd <- paste(bsub < eddyjob.sh)
   # system(cmd)
-
   # return()
 # }
