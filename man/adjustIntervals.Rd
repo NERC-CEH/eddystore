@@ -7,18 +7,18 @@
 adjustIntervals(stationID_proc, procID_proc, intervals)
 }
 \arguments{
-\item{stationID_proc}{A character string identifying a station in the processing file table.}
+\item{stationID_proc}{A character string identifying a station in the project data frame.}
 
-\item{procID_proc}{A character string identifying a processing setup in the processing file table.}
+\item{procID_proc}{A character string identifying a processing setup in the project data frame.}
 
 \item{intervals}{A list of the start and end times of each interval, created by makeDateIntervals.}
 }
 \description{
 This function adjusts the output of makeDateIntervals to match 
-boundaries between processing files.
+boundaries between .eddypro project files.
 }
 \examples{
-test <- adjustIntervals(stationID_proc, procID_proc, intervals)
+myJob <- adjustIntervals(stationID_proc, procID_proc, intervals)
 }
 \seealso{
 \code{\link{adjustIntervals}} for the adjusting this to match boundaries between processing files.

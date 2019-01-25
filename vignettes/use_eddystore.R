@@ -9,7 +9,7 @@ getwd()
 ?eddystore
 ?makeDateIntervals
 ?adjustIntervals
-?writeEddyproProcFilesForIntervals
+?writeProjectFiles
 ?writeJobFileForIntervals
 
 # Processing one year of data took 50 mins with 100 processors (11/10/2018)
@@ -22,8 +22,8 @@ getwd()
 # plot(n_cpu, time_taken)
 
 
-df_proc <- read_excel("../data-raw/eddystore_proc_table.xlsx")
-str(df_proc)
+df_project <- read_excel("../data-raw/eddystore_proc_table.xlsx")
+str(df_project)
 
 # how many intervals to split processing run into
 nIntervals = 4
@@ -32,36 +32,22 @@ stationID_proc <- "EasterBush"
 # processing configuration for processing run
 procID_proc <- "CO2_H2O"
 # start/end dates for processing run
-startDate_proc <- "2006-12-28 00:00"
-endDate_proc   <- "2013-02-01 23:30"
-startDate_proc <- as.POSIXct(strptime(startDate_proc, "%Y-%m-%d %H:%M"), tz = "UTC")
-endDate_proc   <- as.POSIXct(strptime(endDate_proc,   "%Y-%m-%d %H:%M"), tz = "UTC")
-startDate_proc; endDate_proc
-difftime(endDate_proc, startDate_proc, units = "days")
+startDate_period <- "2006-07-01 00:00"
+endDate_period   <- "2007-12-31 23:30"
+startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
+endDate_period   <- as.POSIXct(strptime(endDate_period,   "%Y-%m-%d %H:%M"), tz = "UTC")
+startDate_period; endDate_period
+difftime(endDate_period, startDate_period, units = "days")
 
-intervals <- makeDateIntervals(startDate_proc, endDate_proc, nIntervals)
-intervals$startDate
-intervals$endDate
+intervals <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
+intervals
 
-intervals$startDate <- format(trunc(intervals$startDate, "hour"))
-intervals$endDate <-
-intervals$startDate  + 60*30
-format(trunc(intervals$startDate + 60*30, "hour"))
-format((intervals$startDate, "year"))
-format(ceiling(intervals$endDate, "hour"))
-sapply(intervals$endDate, ceiling)
-sapply(intervals$endDate, "+", 60*30)
+myJob <- adjustIntervals(stationID_proc, procID_proc, intervals)
+myJob
 
-test <- adjustIntervals(stationID_proc, procID_proc, intervals)
-intervals <- test
+myJob <- writeProjectFiles(myJob)
+myJob <- writeJobFile(myJob)
 
-eddyproProcFileName <- "N:/0Peter/curr/ECsystem/eddypro/jasmin/eddystore/stations/test/ini/processing.eddypro"
-eddyproProcFileName <- "/group_workspaces/jasmin2/eddystore/stations/EB_test/proc/processing.eddypro"
-eddyproProcFileName <- "/group_workspaces/jasmin2/eddystore/stations/EasterBush/proc/processing.eddypro"
-eddyproProcFileName <- "/gws/nopw/j04/eddystore/stations/EasterBush/proc/processing.eddypro"
-v_EddyproProcFileNames <- writeEddyproProcFilesForIntervals(eddyproProcFileName, intervals)
-jobFileName <- writeJobFileForIntervals(eddyproProcFileName, nIntervals)
-jobFileName
 cmd <- paste0("bsub < ", jobFileName)
 cmd
 # submit the jobs and get the time to identify the output files from this batch
@@ -161,7 +147,7 @@ adjustIntervals <- function(stationID_proc, procID_proc, intervals){
   for (i in 1:nIntervals){
     # match interval with proc file
     # subset to relevant rows of proc table
-    dfs <- subset(df_proc, stationID == stationID_proc &
+    dfs <- subset(df_project, stationID == stationID_proc &
                            procID == procID_proc)
     # make sure sorted in correct order
     dfs <- arrange(dfs, startDate, endDate)
@@ -237,7 +223,7 @@ p
                 # endDate = endDate_interval))
 # }
 
-writeEddyproProcFilesForIntervals <- function(eddyproProcFileName, intervals){
+writeProjectFiles <- function(eddyproProcFileName, intervals){
   nIntervals <- length(intervals$startDate)
   eddyproProcFileName_int <- vector(mode = "character", length = nIntervals)
     
@@ -314,7 +300,7 @@ writeJobFileForIntervals <- function(eddyproProcFileName, nIntervals){
 run_ep_job <- function(siteID, startDate_ch, endDate_ch, nIntervals = 1){
   # get EddyproProcFileName from database
   intervals <- makeDateIntervals(startDate_ch, endDate_ch, nIntervals)
-  v_EddyproProcFileNames <- writeEddyproProcFilesForIntervals("EddyproProcFileName", intervals)
+  v_EddyproProcFileNames <- writeProjectFiles("EddyproProcFileName", intervals)
   writeJobFilesForIntervals(v_EddyproProcFileName, intervals)
   cmd <- paste(bsub < eddyjob.sh)
   system(cmd)
@@ -326,4 +312,4 @@ library(RCurl)
 library(foreign)
 url <- "https://raw.githubusercontent.com/NERC-CEH/eddystore_procdata/master/eddystore_proc_table.csv"
 tmp_txt <- getURL(url)                
-df_proc <- read.csv(textConnection(tmp_txt))
+df_project <- read.csv(textConnection(tmp_txt))

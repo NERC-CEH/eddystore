@@ -19,12 +19,12 @@ the specified start and end times.
 }
 \examples{
 nIntervals = 4
-startDate_proc <- "2007-01-01 00:00"
-endDate_proc   <- "2007-12-31 23:30"
-startDate_proc <- as.POSIXct(strptime(startDate_proc, "\%Y-\%m-\%d \%H:\%M"), tz = "UTC")
-endDate_proc   <- as.POSIXct(strptime(endDate_proc,   "\%Y-\%m-\%d \%H:\%M"), tz = "UTC")
-intervals <- makeDateIntervals(startDate_proc, endDate_proc, nIntervals)
+startDate_period <- "2006-07-01 00:00"
+endDate_period   <- "2007-12-31 23:30"
+startDate_period <- as.POSIXct(strptime(startDate_period, "\%Y-\%m-\%d \%H:\%M"), tz = "UTC")
+endDate_period   <- as.POSIXct(strptime(endDate_period,   "\%Y-\%m-\%d \%H:\%M"), tz = "UTC")
+intervals <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
 }
 \seealso{
-\code{\link{adjustIntervals}} for the adjusting this to match boundaries between processing files.
+\code{\link{adjustIntervals}} for the adjusting this to match boundaries between .eddypro project files.
 }
