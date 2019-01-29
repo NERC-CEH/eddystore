@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Peter Levy" />
+
+<meta name="date" content="2019-01-28" />
+
+<title>Eddystore: Parallel processing of eddy covariance data on JASMIN</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' || rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<link href="data:text/css;charset=utf-8,body%20%7B%0Abackground%2Dcolor%3A%20%23fff%3B%0Amargin%3A%201em%20auto%3B%0Amax%2Dwidth%3A%20700px%3B%0Aoverflow%3A%20visible%3B%0Apadding%2Dleft%3A%202em%3B%0Apadding%2Dright%3A%202em%3B%0Afont%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Afont%2Dsize%3A%2014px%3B%0Aline%2Dheight%3A%201%2E35%3B%0A%7D%0A%23header%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0A%23TOC%20%7B%0Aclear%3A%20both%3B%0Amargin%3A%200%200%2010px%2010px%3B%0Apadding%3A%204px%3B%0Awidth%3A%20400px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Aborder%2Dradius%3A%205px%3B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Afont%2Dsize%3A%2013px%3B%0Aline%2Dheight%3A%201%2E3%3B%0A%7D%0A%23TOC%20%2Etoctitle%20%7B%0Afont%2Dweight%3A%20bold%3B%0Afont%2Dsize%3A%2015px%3B%0Amargin%2Dleft%3A%205px%3B%0A%7D%0A%23TOC%20ul%20%7B%0Apadding%2Dleft%3A%2040px%3B%0Amargin%2Dleft%3A%20%2D1%2E5em%3B%0Amargin%2Dtop%3A%205px%3B%0Amargin%2Dbottom%3A%205px%3B%0A%7D%0A%23TOC%20ul%20ul%20%7B%0Amargin%2Dleft%3A%20%2D2em%3B%0A%7D%0A%23TOC%20li%20%7B%0Aline%2Dheight%3A%2016px%3B%0A%7D%0Atable%20%7B%0Amargin%3A%201em%20auto%3B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dcolor%3A%20%23DDDDDD%3B%0Aborder%2Dstyle%3A%20outset%3B%0Aborder%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0Aborder%2Dwidth%3A%202px%3B%0Apadding%3A%205px%3B%0Aborder%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dstyle%3A%20inset%3B%0Aline%2Dheight%3A%2018px%3B%0Apadding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0Aborder%2Dleft%2Dstyle%3A%20none%3B%0Aborder%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Ap%20%7B%0Amargin%3A%200%2E5em%200%3B%0A%7D%0Ablockquote%20%7B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Apadding%3A%200%2E25em%200%2E75em%3B%0A%7D%0Ahr%20%7B%0Aborder%2Dstyle%3A%20solid%3B%0Aborder%3A%20none%3B%0Aborder%2Dtop%3A%201px%20solid%20%23777%3B%0Amargin%3A%2028px%200%3B%0A%7D%0Adl%20%7B%0Amargin%2Dleft%3A%200%3B%0A%7D%0Adl%20dd%20%7B%0Amargin%2Dbottom%3A%2013px%3B%0Amargin%2Dleft%3A%2013px%3B%0A%7D%0Adl%20dt%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Aul%20%7B%0Amargin%2Dtop%3A%200%3B%0A%7D%0Aul%20li%20%7B%0Alist%2Dstyle%3A%20circle%20outside%3B%0A%7D%0Aul%20ul%20%7B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Apre%2C%20code%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0Aborder%2Dradius%3A%203px%3B%0Acolor%3A%20%23333%3B%0Awhite%2Dspace%3A%20pre%2Dwrap%3B%20%0A%7D%0Apre%20%7B%0Aborder%2Dradius%3A%203px%3B%0Amargin%3A%205px%200px%2010px%200px%3B%0Apadding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Acode%20%7B%0Afont%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0Afont%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0Apadding%3A%202px%200px%3B%0A%7D%0Adiv%2Efigure%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0Abackground%2Dcolor%3A%20%23FFFFFF%3B%0Apadding%3A%202px%3B%0Aborder%3A%201px%20solid%20%23DDDDDD%3B%0Aborder%2Dradius%3A%203px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Amargin%3A%200%205px%3B%0A%7D%0Ah1%20%7B%0Amargin%2Dtop%3A%200%3B%0Afont%2Dsize%3A%2035px%3B%0Aline%2Dheight%3A%2040px%3B%0A%7D%0Ah2%20%7B%0Aborder%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Apadding%2Dbottom%3A%202px%3B%0Afont%2Dsize%3A%20145%25%3B%0A%7D%0Ah3%20%7B%0Aborder%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Afont%2Dsize%3A%20120%25%3B%0A%7D%0Ah4%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0Amargin%2Dleft%3A%208px%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Ah5%2C%20h6%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23ccc%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Aa%20%7B%0Acolor%3A%20%230033dd%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Aa%3Ahover%20%7B%0Acolor%3A%20%236666ff%3B%20%7D%0Aa%3Avisited%20%7B%0Acolor%3A%20%23800080%3B%20%7D%0Aa%3Avisited%3Ahover%20%7B%0Acolor%3A%20%23BB00BB%3B%20%7D%0Aa%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0Aa%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%20code%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%0A" rel="stylesheet" type="text/css" />
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Eddystore: Parallel processing of eddy covariance data on JASMIN</h1>
+<h4 class="author"><em>Peter Levy</em></h4>
+<h4 class="date"><em>2019-01-28</em></h4>
+
+
+
+<!--- { rendering -->
+<!--- } -->
+<!--- { startup -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">rm</span>(<span class="dt">list=</span><span class="kw">ls</span>(<span class="dt">all=</span><span class="ot">TRUE</span>))
+<span class="kw">library</span>(eddystore)
+<span class="co"># library(readxl)</span>
+<span class="co"># library(dplyr)</span>
+<span class="co"># library(stringr)</span>
+<span class="kw">library</span>(RCurl)
+<span class="kw">library</span>(foreign)
+
+<span class="co"># eddypro project data on github</span>
+url &lt;-<span class="st"> &quot;https://raw.githubusercontent.com/NERC-CEH/eddystore_procdata/master/eddystore_proc_table.csv&quot;</span>
+tmp_txt &lt;-<span class="st"> </span><span class="kw">getURL</span>(url)                
+df_project &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="kw">textConnection</span>(tmp_txt))
+
+<span class="co"># eedypro project data on local disk</span>
+df_project &lt;-<span class="st"> </span><span class="kw">read_excel</span>(<span class="st">&quot;C:/Users/plevy/Documents/eddystore/data-raw/eddystore_proc_table.xlsx&quot;</span>)
+<span class="kw">str</span>(df_project)</code></pre></div>
+<pre><code>## Classes 'tbl_df', 'tbl' and 'data.frame':    14 obs. of  8 variables:
+##  $ siteID          : chr  &quot;EB&quot; &quot;EB&quot; &quot;EB&quot; &quot;EB&quot; ...
+##  $ stationID       : chr  &quot;EasterBush&quot; &quot;EasterBush&quot; &quot;EasterBush&quot; &quot;EasterBush&quot; ...
+##  $ procID          : chr  &quot;CO2_H2O&quot; &quot;CO2_H2O&quot; &quot;CO2_H2O&quot; &quot;N2O_H2O&quot; ...
+##  $ startDate       : POSIXct, format: &quot;1995-01-01&quot; &quot;2007-01-01&quot; ...
+##  $ endDate         : POSIXct, format: &quot;2006-12-31 23:59:00&quot; &quot;2012-12-31 23:59:00&quot; ...
+##  $ project_filepath: chr  &quot;N:/0Peter/curr/ECsystem/eddypro/EB_1995.eddypro&quot; &quot;N:/0Peter/curr/ECsystem/eddypro/EB_2007.eddypro&quot; &quot;N:/0Peter/curr/ECsystem/eddypro/EB_2013.eddypro&quot; &quot;/group_workspaces/jasmin2/eddystore/stations/EasterBush/proc/processing_2018-02-26T132538_adv.eddypro&quot; ...
+##  $ data_path       : chr  &quot;/group_workspaces/jasmin2/eddystore/stations/EasterBush/raw_files&quot; &quot;/group_workspaces/jasmin2/eddystore/stations/EasterBush/raw_files&quot; &quot;/group_workspaces/jasmin2/eddystore/stations/EasterBush/raw_files&quot; &quot;/group_workspaces/jasmin2/eddystore/stations/EasterBush/raw_files&quot; ...
+##  $ out_path        : chr  &quot;/group_workspaces/jasmin2/eddystore/stations/EasterBush/output&quot; &quot;/group_workspaces/jasmin2/eddystore/stations/EasterBush/output&quot; &quot;/group_workspaces/jasmin2/eddystore/stations/EasterBush/output&quot; &quot;/group_workspaces/jasmin2/eddystore/stations/EasterBush/output&quot; ...</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">getwd</span>()</code></pre></div>
+<pre><code>## [1] &quot;C:/Users/plevy/Documents/eddystore/vignettes&quot;</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#setwd(&quot;./eddystore/data-raw/&quot;)</span>
+
+<span class="co"># ?eddystore</span>
+<span class="co"># ?makeDateIntervals</span>
+<span class="co"># ?adjustIntervals</span>
+<span class="co"># ?writeProjectFiles</span>
+<span class="co"># ?writeJobFileForIntervals</span>
+
+<span class="co"># Processing one year of data took 50 mins with 100 processors (11/10/2018)</span>
+<span class="co"># Processing one year of data took 19 mins with 200 processors (12/10/2018)</span>
+<span class="co"># Processing one year of data took 29 mins with 365 processors (12/10/2018)</span>
+<span class="co"># Processing one year of data took ~300 mins with 1 processor</span>
+<span class="co"># Speed-up = 300/20 = 15</span>
+<span class="co"># time_taken &lt;- c(300, 50, 19, 29)</span>
+<span class="co"># n_cpu &lt;- c(1, 100, 200, 365)</span>
+<span class="co"># plot(n_cpu, time_taken)</span></code></pre></div>
+<!--- } -->
+<div id="eddystore" class="section level1">
+<h1>Eddystore</h1>
+<p>In this vignette, I demonstrate how to run Eddystore.</p>
+<!--- { run_example -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># how many intervals to split processing run into</span>
+nIntervals =<span class="st"> </span><span class="dv">4</span>
+<span class="co"># station for processing run</span>
+stationID_proc &lt;-<span class="st"> &quot;EasterBush&quot;</span>
+<span class="co"># processing configuration for processing run</span>
+procID_proc &lt;-<span class="st"> &quot;CO2_H2O&quot;</span>
+<span class="co"># start/end dates for processing run</span>
+startDate_period &lt;-<span class="st"> &quot;2006-07-01 00:00&quot;</span>
+endDate_period   &lt;-<span class="st"> &quot;2007-12-31 23:30&quot;</span>
+startDate_period &lt;-<span class="st"> </span><span class="kw">as.POSIXct</span>(<span class="kw">strptime</span>(startDate_period, <span class="st">&quot;%Y-%m-%d %H:%M&quot;</span>), <span class="dt">tz =</span> <span class="st">&quot;UTC&quot;</span>)
+endDate_period   &lt;-<span class="st"> </span><span class="kw">as.POSIXct</span>(<span class="kw">strptime</span>(endDate_period,   <span class="st">&quot;%Y-%m-%d %H:%M&quot;</span>), <span class="dt">tz =</span> <span class="st">&quot;UTC&quot;</span>)
+startDate_period; endDate_period
+<span class="kw">difftime</span>(endDate_period, startDate_period, <span class="dt">units =</span> <span class="st">&quot;days&quot;</span>)
+
+intervals &lt;-<span class="st"> </span><span class="kw">makeDateIntervals</span>(startDate_period, endDate_period, nIntervals)
+intervals
+
+myJob &lt;-<span class="st"> </span><span class="kw">adjustIntervals</span>(stationID_proc, procID_proc, intervals)
+myJob
+
+myJob &lt;-<span class="st"> </span><span class="kw">writeProjectFiles</span>(myJob)
+myJob &lt;-<span class="st"> </span><span class="kw">writeJobFile</span>(myJob)
+myJob &lt;-<span class="st"> </span><span class="kw">runJob</span>(myJob)
+myJob<span class="op">$</span>err
+
+df_essn &lt;-<span class="st"> </span><span class="kw">get_essential_output_df</span>(myJob<span class="op">$</span>job_startTime)
+<span class="kw">dim</span>(df_essn)
+<span class="kw">str</span>(df_essn)</code></pre></div>
+<!--- } -->
+</div>
+<div id="other-stuff" class="section level1">
+<h1>Other stuff</h1>
+<p>Some text.</p>
+<!--- { old_stuff -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cmd &lt;-<span class="st"> </span><span class="kw">paste0</span>(<span class="st">&quot;bsub &lt; &quot;</span>, jobFileName)
+cmd
+<span class="co"># submit the jobs and get the time to identify the output files from this batch</span>
+err &lt;-<span class="st"> </span><span class="kw">system</span>(cmd); job_time &lt;-<span class="st"> </span><span class="kw">Sys.time</span>()
+err; job_time
+
+
+to_match &lt;-<span class="st"> </span><span class="kw">paste0</span>(<span class="st">&quot;eddypro_job._full_output_&quot;</span>,  YYYY, <span class="st">&quot;-&quot;</span>, mm, <span class="st">&quot;-&quot;</span>, dd, <span class="st">&quot;T&quot;</span>, HH, <span class="kw">substr</span>(MM, <span class="dv">1</span>, <span class="dv">1</span>))
+<span class="kw">list.files</span>(<span class="dt">path =</span> <span class="st">&quot;./stations/EasterBush/output&quot;</span>, <span class="dt">pattern =</span> to_match, <span class="dt">full.names =</span> <span class="ot">TRUE</span>)
+files_out &lt;-<span class="st"> </span><span class="kw">list.files</span>(<span class="dt">path =</span> <span class="st">&quot;./stations/EasterBush/output&quot;</span>, <span class="dt">pattern =</span> to_match, <span class="dt">full.names =</span> <span class="ot">TRUE</span>)
+df_full &lt;-<span class="st"> </span><span class="kw">do.call</span>(rbind, <span class="kw">lapply</span>(files_out, <span class="dt">FUN =</span> read_full_output))
+<span class="kw">dim</span>(df_full)
+<span class="kw">head</span>(df_full[,<span class="dv">1</span><span class="op">:</span><span class="dv">9</span>])
+<span class="kw">str</span>(df_full[,<span class="dv">1</span><span class="op">:</span><span class="dv">9</span>])
+
+df_essn &lt;-<span class="st"> </span><span class="kw">get_essential_output_df</span>(job_time)
+<span class="kw">dim</span>(df_essn)
+<span class="kw">str</span>(df_essn)
+
+p &lt;-<span class="st"> </span><span class="kw">ggplot</span>(df_essn, <span class="kw">aes</span>(datect, H))
+p  &lt;-<span class="st"> </span>p <span class="op">+</span><span class="st"> </span><span class="kw">geom_line</span>()
+<span class="co"># p  &lt;- p + geom_point()</span>
+p
+
+<span class="kw">dir</span>(<span class="dt">path =</span> <span class="st">&quot;./stations/EasterBush/output&quot;</span>)
+<span class="kw">Filter</span>(<span class="cf">function</span>(x) <span class="kw">grepl</span>(<span class="st">&quot;eddypro_job&quot;</span>, x), <span class="kw">dir</span>(<span class="dt">path =</span> <span class="st">&quot;./stations/EasterBush/output&quot;</span>))
+
+<span class="co"># EB_test works ok</span>
+<span class="co"># EasterBush - on;y first job produced output, althopugh no errors</span>
+<span class="co"># guess we need to sort out time as well as date?</span>
+<span class="co"># using POSIXct time format</span>
+
+test &lt;-<span class="st"> </span><span class="kw">adjustIntervals</span>(stationID_proc, procID_proc, intervals)
+intervals &lt;-<span class="st"> </span>test
+test &lt;-<span class="st"> </span><span class="kw">adjustIntervals</span>(stationID_proc, procID_proc, test)
+
+df_b &lt;-<span class="st"> </span><span class="kw">data.frame</span>(
+  <span class="dt">interval =</span> <span class="dv">1</span><span class="op">:</span>nIntervals,
+  <span class="dt">start =</span> intervals<span class="op">$</span>startDate, 
+  <span class="dt">end  =</span> intervals<span class="op">$</span>endDate)
+<span class="co"># df_b &lt;- gather(df_b, interval, value = date)</span>
+df_b &lt;-<span class="st"> </span><span class="kw">melt</span>(df_b, <span class="dt">id.vars =</span> <span class="st">&quot;interval&quot;</span>, <span class="dt">value.name =</span> <span class="st">&quot;date&quot;</span>) 
+
+df_b<span class="op">$</span>date &lt;-<span class="st"> </span><span class="kw">as.POSIXct</span>(df_b<span class="op">$</span>date, <span class="dt">origin =</span> <span class="st">&quot;1970-01-01&quot;</span>, <span class="dt">tz =</span> <span class="st">&quot;GMT&quot;</span>)
+df_b<span class="op">$</span>y &lt;-<span class="st"> </span><span class="dv">0</span>
+df_b<span class="op">$</span>y[df_b<span class="op">$</span>variable <span class="op">==</span><span class="st"> &quot;end&quot;</span>] &lt;-<span class="st"> </span><span class="fl">0.75</span>
+
+df_a &lt;-<span class="st"> </span><span class="kw">data.frame</span>(
+  <span class="dt">interval =</span> <span class="dv">1</span><span class="op">:</span>nIntervals,
+  <span class="dt">start =</span> test<span class="op">$</span>startDate, 
+  <span class="dt">end   =</span> test<span class="op">$</span>endDate)
+df_a &lt;-<span class="st"> </span><span class="kw">melt</span>(df_a, <span class="dt">id.vars =</span> <span class="st">&quot;interval&quot;</span>, <span class="dt">value.name =</span> <span class="st">&quot;date&quot;</span>)
+df_a<span class="op">$</span>date &lt;-<span class="st"> </span><span class="kw">as.POSIXct</span>(df_a<span class="op">$</span>date, <span class="dt">origin =</span> <span class="st">&quot;1970-01-01&quot;</span>, <span class="dt">tz =</span> <span class="st">&quot;GMT&quot;</span>)
+df_a<span class="op">$</span>y &lt;-<span class="st"> </span><span class="dv">0</span>
+df_a<span class="op">$</span>y[df_a<span class="op">$</span>variable <span class="op">==</span><span class="st"> &quot;end&quot;</span>] &lt;-<span class="st"> </span><span class="dv">1</span>
+
+p &lt;-<span class="st"> </span><span class="kw">ggplot</span>(df_b, <span class="kw">aes</span>(date, y)) 
+p &lt;-<span class="st"> </span>p <span class="op">+</span><span class="st"> </span><span class="kw">geom_vline</span>(<span class="dt">data =</span> dfs, <span class="kw">aes</span>(<span class="dt">xintercept =</span> startDate), <span class="dt">size =</span> <span class="dv">3</span>)
+p &lt;-<span class="st"> </span>p <span class="op">+</span><span class="st"> </span><span class="kw">geom_line</span>(<span class="dt">colour =</span> <span class="st">&quot;blue&quot;</span>)
+p &lt;-<span class="st"> </span>p <span class="op">+</span><span class="st"> </span><span class="kw">geom_line</span>(<span class="dt">data =</span> df_a, <span class="dt">colour =</span> <span class="st">&quot;red&quot;</span>)
+p</code></pre></div>
+<!--- } -->
+</div>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

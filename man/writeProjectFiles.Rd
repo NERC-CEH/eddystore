@@ -13,7 +13,16 @@ writeProjectFiles(job)
 This function writes an eddypro project file for each of the intervals specified.
 }
 \examples{
-eddyproProcFileName <- "/group_workspaces/jasmin2/eddystore/stations/EasterBush/proc/processing.eddypro"
+stationID_proc <- "EasterBush"
+procID_proc <- "CO2_H2O"
+nIntervals <- 4
+startDate_period <- "2006-07-01 00:00"
+endDate_period   <- "2007-12-31 23:30"
+startDate_period <- as.POSIXct(strptime(startDate_period, "\%Y-\%m-\%d \%H:\%M"), tz = "UTC")
+endDate_period   <- as.POSIXct(strptime(endDate_period,   "\%Y-\%m-\%d \%H:\%M"), tz = "UTC")
+myJob <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
+df_project <- read_excel("C:/Users/plevy/Documents/eddystore/data-raw/eddystore_proc_table.xlsx")
+myJob <- adjustIntervals(stationID_proc, procID_proc, myJob)
 myJob <- writeProjectFiles(myJob)
 }
 \seealso{

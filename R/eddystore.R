@@ -67,7 +67,7 @@ read_full_output <- function(fname){
 #' endDate_period   <- "2007-12-31 23:30"
 #' startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
 #' endDate_period   <- as.POSIXct(strptime(endDate_period,   "%Y-%m-%d %H:%M"), tz = "UTC")
-#' intervals <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
+#' myJob <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
 
 makeDateIntervals <- function(startDate_period, endDate_period, nIntervals){
   periodLength <- difftime(endDate_period, startDate_period, units = "days") + 1
@@ -110,7 +110,16 @@ makeDateIntervals <- function(startDate_period, endDate_period, nIntervals){
 #' @export
 #' @seealso \code{\link{adjustIntervals}} for the adjusting this to match boundaries between processing files.
 #' @examples
-#' myJob <- adjustIntervals(stationID_proc, procID_proc, intervals)
+#' stationID_proc <- "EasterBush"
+#' procID_proc <- "CO2_H2O"
+#' nIntervals <- 4
+#' startDate_period <- "2006-07-01 00:00"
+#' endDate_period   <- "2007-12-31 23:30"
+#' startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
+#' endDate_period   <- as.POSIXct(strptime(endDate_period,   "%Y-%m-%d %H:%M"), tz = "UTC")
+#' myJob <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
+#' df_project <- read_excel("C:/Users/plevy/Documents/eddystore/data-raw/eddystore_proc_table.xlsx")
+#' myJob <- adjustIntervals(stationID_proc, procID_proc, myJob)
 
 adjustIntervals <- function(stationID_proc, procID_proc, intervals){
   v_project_filepath <- vector(mode = "character", length = intervals$nIntervals)
@@ -165,7 +174,16 @@ adjustIntervals <- function(stationID_proc, procID_proc, intervals){
 #' @export
 #' @seealso \code{\link{adjustIntervals}} for the adjusting this to match boundaries between processing files.
 #' @examples
-#' eddyproProcFileName <- "/group_workspaces/jasmin2/eddystore/stations/EasterBush/proc/processing.eddypro"
+#' stationID_proc <- "EasterBush"
+#' procID_proc <- "CO2_H2O"
+#' nIntervals <- 4
+#' startDate_period <- "2006-07-01 00:00"
+#' endDate_period   <- "2007-12-31 23:30"
+#' startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
+#' endDate_period   <- as.POSIXct(strptime(endDate_period,   "%Y-%m-%d %H:%M"), tz = "UTC")
+#' myJob <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
+#' df_project <- read_excel("C:/Users/plevy/Documents/eddystore/data-raw/eddystore_proc_table.xlsx")
+#' myJob <- adjustIntervals(stationID_proc, procID_proc, myJob)
 #' myJob <- writeProjectFiles(myJob)
 
 writeProjectFiles <- function(job){
@@ -174,13 +192,19 @@ writeProjectFiles <- function(job){
   v_eddyproProjectFileName <- vector(mode = "character", length = nIntervals)
 
   # make a base project file name, to be incrementally numbered for each interval
-  ## could ust use dirname function to do this
   dir_name <- str_split(job$project_filepath[1], "/")[[1]]
-  # remove the file name from the end
-  dir_name <- dir_name[1:(length(dir_name)-1)]
-  dir_name <- str_c(dir_name, collapse = "/")
+
   # make this the base project file name
-  baseProjectFileName <- paste0(dir_name, "/processing.eddypro")
+  baseProjectFileName <- dir_name[1:(length(dir_name)-1)]
+  baseProjectFileName <- str_c(baseProjectFileName, collapse = "/")
+  baseProjectFileName <- paste0(baseProjectFileName, "/tmp_prj/processing.eddypro")
+  
+  # get the station dir name, 2 from the end (i.e. station/proc/processing.eddypro)
+  station_name <- dir_name[length(dir_name)-2]
+  
+  # and find the station directory for the eddypro run, for output etc.
+  station_dir <- dir_name[1:(length(dir_name)-2)]
+  station_dir <- str_c(station_dir, collapse = "/")
   
   for (i in 1:nIntervals){
     # read the appropriate .eddypro file for this interval into a character vector
@@ -205,13 +229,13 @@ writeProjectFiles <- function(job){
     ind <- !is.na(str_match(eddyproProjectFileText, "start_date="))
     # replace with interval start date
     eddyproProjectFileText[ind] <- paste0(str_sub(eddyproProjectFileText[ind], start = 1, end = 3), 
-      "start_date=", intervals$startDate[i])
+      "start_date=", job$startDate[i])
     
     # find indices where end date appears
     ind <- !is.na(str_match(eddyproProjectFileText, "end_date="))
     # replace with interval end date
     eddyproProjectFileText[ind] <- paste0(str_sub(eddyproProjectFileText[ind], start = 1, end = 3), 
-      "end_date=", intervals$endDate[i])
+      "end_date=", job$endDate[i])
     print(paste0("Writing ", v_eddyproProjectFileName[i]))
     writeLines(eddyproProjectFileText, con = v_eddyproProjectFileName[i])
   }  
@@ -219,6 +243,8 @@ writeProjectFiles <- function(job){
                       startDate = job$startDate, 
                         endDate = job$endDate,
                      nIntervals = job$nIntervals,
+                   station_name = station_name,
+                   station_dir = station_dir,
        v_eddyproProjectFileName = v_eddyproProjectFileName,
             baseProjectFileName = baseProjectFileName))
 }
@@ -228,22 +254,35 @@ writeProjectFiles <- function(job){
 #' This function writes a LOTUS batch job file for each of the intervals specified.
 #' Should eddyproProcFileName actually be looked up in the proc table by stationID_proc, procID_proc in adjustIntervals, 
 #' and added to the object returned there?
-#' @param eddyproProcFileName A character string identifying the root eddypro file. 
-#' @param nIntervals An integer number of intervals to use to split the processing into.
+#' @param job An eddystore job object made with the writeProjectFiles function
+#' @param binpath Path to the eddy_rp raw data processing binary file
+#' @param switch_OS Switch betweeen linux and windows versions
+#' @param eddystore_path The path to eddystore
 #' @export
 #' @seealso \code{\link{adjustIntervals}} for the adjusting this to match boundaries between processing files.
 #' @examples
-#' jobFileName <- writeJobFile(myJob)
-#' jobFileName
+#' stationID_proc <- "EasterBush"
+#' procID_proc <- "CO2_H2O"
+#' nIntervals <- 4
+#' startDate_period <- "2006-07-01 00:00"
+#' endDate_period   <- "2007-12-31 23:30"
+#' startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
+#' endDate_period   <- as.POSIXct(strptime(endDate_period,   "%Y-%m-%d %H:%M"), tz = "UTC")
+#' myJob <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
+#' df_project <- read_excel("C:/Users/plevy/Documents/eddystore/data-raw/eddystore_proc_table.xlsx")
+#' myJob <- adjustIntervals(stationID_proc, procID_proc, myJob)
+#' myJob <- writeProjectFiles(myJob)
+#' myJob <- writeJobFile(myJob)
 
-writeJobFile <- function(job){
-  # break the full path into dirnames
-  dir_name <- str_split(job$baseProjectFileName, "/")[[1]]
-  # get the station dir name, 2 from the end (i.e. station/proc/processing.eddypro)
-  dir_name <- dir_name[length(dir_name)-2]
-  # make this the dinstinct job name
-  jobFileName <- paste0(dir_name, "_eddyjob.sh")
+writeJobFile <- function(job, binpath = "/gws/nopw/j04/eddystore/eddypro-engine_6.2.0/eddypro-engine/bin/linux/eddypro_rp", 
+                            switch_OS = "-s linux",
+                            eddystore_path = "/gws/nopw/j04/eddystore"){
+  # make a unique name for a bsub queue file
+  job_writeTime <- str_replace_all(Sys.time(), c(" " = "_", ":" = "_", "GMT" = ""))
+  jobFileName <- paste0(eddystore_path, "/jobs/", job$station_name, "_", job_writeTime, "_eddystoreJob.sh")
   con <- file(jobFileName)
+  
+  # write contents of bsub queue file
   writeLines("#!/bin/bash", con = jobFileName)
   write("#!/bin/bash", file = jobFileName, append = TRUE)
   write("#BSUB -q short-serial", file = jobFileName, append = TRUE)
@@ -252,13 +291,9 @@ writeJobFile <- function(job){
   #write("#BSUB -W 00:10", file = jobFileName, append = TRUE) # this sets an extra limit on wall time used if needed
   write(paste0("#BSUB -J eddyjobArray[1-", job$nIntervals, "]"), file = jobFileName, append = TRUE)
 
-  # ver 5.1.1 doesnt read processing file argument correctly (at all?)
-  #binpath <- "/group_workspaces/jasmin2/eddystore/eddypro-engine-master/bin/eddypro_rp"
-  # use ver 6.2.0
-  binpath <- "/group_workspaces/jasmin2/eddystore/eddypro-engine_6.2.0/eddypro-engine/bin/linux/eddypro_rp"
-  switch_OS <- "-s linux" 
   # assumes processing file is in a subdirectory of main station directory
-  switch_env <- paste("-e", dirname(dirname(job$baseProjectFileName)))
+  switch_env <- paste("-e", job$station_dir)
+ 
   # make job array of processing file names
   eddyproProcArray <- paste0(tools::file_path_sans_ext(job$baseProjectFileName), 
         "${LSB_JOBINDEX}", ".eddypro")        
@@ -280,11 +315,19 @@ writeJobFile <- function(job){
 #' @export
 #' @seealso \code{\link{adjustIntervals}} for the adjusting this to match boundaries between project files.
 #' @examples
+#' stationID_proc <- "EasterBush"
+#' procID_proc <- "CO2_H2O"
+#' nProcessors <- 4
+#' startDate_period <- "2006-07-01 00:00"
+#' endDate_period   <- "2007-12-31 23:30"
+#' startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
+#' endDate_period   <- as.POSIXct(strptime(endDate_period,   "%Y-%m-%d %H:%M"), tz = "UTC")
+#' df_project <- read_excel("C:/Users/plevy/Documents/eddystore/data-raw/eddystore_proc_table.xlsx")
 #' myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors)
 
 createJob <- function(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors){
-  intervals <- makeDateIntervals(startDate_period, endDate_period, nProcessors)
-  job <- adjustIntervals(stationID_proc, procID_proc, intervals)
+  job <- makeDateIntervals(startDate_period, endDate_period, nProcessors)
+  job <- adjustIntervals(stationID_proc, procID_proc, job)
   job <- writeProjectFiles(job)
   job <- writeJobFile(job)
   return(job)
@@ -300,10 +343,19 @@ createJob <- function(stationID_proc, procID_proc, startDate_period, endDate_per
 #' @export
 #' @seealso \code{\link{adjustIntervals}} for the adjusting this to match boundaries between project files.
 #' @examples
+#' stationID_proc <- "EasterBush"
+#' procID_proc <- "CO2_H2O"
+#' nProcessors <- 4
+#' startDate_period <- "2006-07-01 00:00"
+#' endDate_period   <- "2007-12-31 23:30"
+#' startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
+#' endDate_period   <- as.POSIXct(strptime(endDate_period,   "%Y-%m-%d %H:%M"), tz = "UTC")
+#' df_project <- read_excel("C:/Users/plevy/Documents/eddystore/data-raw/eddystore_proc_table.xlsx")
+#' myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors)
 #' myJob <- runJob(myJob)
 
-runJob <- function(jobFileName){
-  cmd <- paste0("bsub < ", jobFileName)
+runJob <- function(job){
+  cmd <- paste0("bsub < ", job$jobFileName)
   # submit the jobs and get the time to identify the output files from this batch
   err <- system(cmd); job_startTime <- Sys.time()
   err; job_startTime

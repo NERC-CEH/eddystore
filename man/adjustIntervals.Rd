@@ -18,7 +18,16 @@ This function adjusts the output of makeDateIntervals to match
 boundaries between .eddypro project files.
 }
 \examples{
-myJob <- adjustIntervals(stationID_proc, procID_proc, intervals)
+stationID_proc <- "EasterBush"
+procID_proc <- "CO2_H2O"
+nIntervals <- 4
+startDate_period <- "2006-07-01 00:00"
+endDate_period   <- "2007-12-31 23:30"
+startDate_period <- as.POSIXct(strptime(startDate_period, "\%Y-\%m-\%d \%H:\%M"), tz = "UTC")
+endDate_period   <- as.POSIXct(strptime(endDate_period,   "\%Y-\%m-\%d \%H:\%M"), tz = "UTC")
+myJob <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
+df_project <- read_excel("C:/Users/plevy/Documents/eddystore/data-raw/eddystore_proc_table.xlsx")
+myJob <- adjustIntervals(stationID_proc, procID_proc, myJob)
 }
 \seealso{
 \code{\link{adjustIntervals}} for the adjusting this to match boundaries between processing files.

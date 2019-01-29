@@ -9,6 +9,20 @@ getwd()
 setwd("./eddystore")
 system.time(check())
 
+# removed frm Depends
+         # readxl,
+         # readr,
+         # dplyr,
+         # tidyr,
+         # stringr,
+         # reshape2
+# devtools::use_package("readxl") # Defaults to imports
+# devtools::use_package("readr") # Defaults to imports
+# devtools::use_package("dplyr") # Defaults to imports
+# devtools::use_package("tidyr") # Defaults to imports
+# devtools::use_package("stringr") # Defaults to imports
+# devtools::use_package("reshape2") # Defaults to imports
+
 # Define geographic projections to be used
 # # lat / lon 
 # projlonlat <- CRS("+proj=longlat +datum=WGS84")

@@ -7,9 +7,7 @@
 writeJobFile(job)
 }
 \arguments{
-\item{eddyproProcFileName}{A character string identifying the root eddypro file.}
-
-\item{nIntervals}{An integer number of intervals to use to split the processing into.}
+\item{job}{An eddystore job object made with the writeProjectFiles function}
 }
 \description{
 This function writes a LOTUS batch job file for each of the intervals specified.
@@ -17,8 +15,18 @@ Should eddyproProcFileName actually be looked up in the proc table by stationID_
 and added to the object returned there?
 }
 \examples{
-jobFileName <- writeJobFile(myJob)
-jobFileName
+stationID_proc <- "EasterBush"
+procID_proc <- "CO2_H2O"
+nIntervals <- 4
+startDate_period <- "2006-07-01 00:00"
+endDate_period   <- "2007-12-31 23:30"
+startDate_period <- as.POSIXct(strptime(startDate_period, "\%Y-\%m-\%d \%H:\%M"), tz = "UTC")
+endDate_period   <- as.POSIXct(strptime(endDate_period,   "\%Y-\%m-\%d \%H:\%M"), tz = "UTC")
+myJob <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
+df_project <- read_excel("C:/Users/plevy/Documents/eddystore/data-raw/eddystore_proc_table.xlsx")
+myJob <- adjustIntervals(stationID_proc, procID_proc, myJob)
+myJob <- writeProjectFiles(myJob)
+myJob <- writeJobFile(myJob)
 }
 \seealso{
 \code{\link{adjustIntervals}} for the adjusting this to match boundaries between processing files.
