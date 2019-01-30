@@ -34,7 +34,7 @@ library(RCurl)
 # eddypro project data on github
 #switch to cvs here - don't need readxl, and plain text for version control
 url <- "https://raw.githubusercontent.com/NERC-CEH/eddystore_procdata/master/eddystore_proc_table.csv"
-tmp_txt <- getURL(url)                
+tmp_txt <- RCurl::getURL(url)                
 df_project <- read.csv(textConnection(tmp_txt), stringsAsFactors = FALSE)
 
 # eddypro project data on local disk
@@ -72,6 +72,11 @@ In this vignette, I demonstrate how to run Eddystore.
 
 <!--- { run_example -->
 ```{r run_example, eval=FALSE, echo=TRUE, include=TRUE}
+# convert file paths in project file to eddystore locations
+eddyproProjectPathName <- "/gws/nopw/j04/eddystore/stations/EasterBush/proc/processing2.eddypro"
+station_dir <- "/gws/nopw/j04/eddystore/stations/EasterBush"
+convertProjectPath(eddyproProjectPathName, station_dir)
+
 # how many intervals to split processing run into
 nIntervals = 4
 # station for processing run
@@ -101,6 +106,9 @@ myJob
 # all in a oner
 nProcessors <- 4
 myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors)
+
+# test running outwith queue
+/gws/nopw/j04/eddystore/eddypro-engine_6.2.0/eddypro-engine/bin/linux/eddypro_rp -s linux -e /gws/nopw/j04/eddystore/stations/EasterBush /gws/nopw/j04/eddystore/stations/EasterBush/projects/processing2.eddypro
 
 myJob <- runJob(myJob)
 myJob$err

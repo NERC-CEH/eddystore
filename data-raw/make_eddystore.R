@@ -16,7 +16,7 @@ system.time(check())
          # tidyr,
          # stringr,
          # reshape2
-# devtools::use_package("readxl") # Defaults to imports
+devtools::use_package("RCurl") # Defaults to imports
 # devtools::use_package("readr") # Defaults to imports
 # devtools::use_package("dplyr") # Defaults to imports
 # devtools::use_package("tidyr") # Defaults to imports

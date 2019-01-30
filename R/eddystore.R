@@ -6,52 +6,6 @@
 "_PACKAGE"
 #> [1] "_PACKAGE"
 
-#' Collate essential output files
-#'
-#' Note that curently "EasterBush" is hard-coded in the path - need to pass path argument
-#' This function collates all the essential output files.
-#' @param job_time A character string for the time the run was started, used to identify the relevant files.
-#' @export
-
-get_essential_output_df <- function(job_time){
-  na.strings = c("NAN", "7999", "-7999","-999","999","9999.99", "-9999.0", "-9999.0000000000000","9999","9999","-9999")
-  job_time_ch <- str_split(job_time, "[-: ]")[[1]]
-  YYYY <- job_time_ch[1]
-  mm <- job_time_ch[2]
-  dd <- job_time_ch[3]
-  HH <- job_time_ch[4]
-  MM <- job_time_ch[5]
-  SS <- job_time_ch[6]
-
-  # "essentials" output files created in a ten minute slot, hoping not on a 10-min boundary (i.e. 29 to 30 mins)
-  to_match <- paste0("eddypro_job.*_essentials_", YYYY, "-", mm, "-", dd, "T", HH, substr(MM, 1, 1))
-  list.files(path = "./stations/EasterBush/output", pattern = to_match, full.names = TRUE)
-  files_out <- list.files(path = "./stations/EasterBush/output", pattern = to_match, full.names = TRUE)
-  df_essn <- do.call(rbind, lapply(files_out, FUN = read.csv, na.strings = na.strings, header = TRUE, stringsAsFactors = FALSE))
-  #dim(df_essn)
-  #head(df_essn[,1:9])
-  #str(df_essn[,1:9])
-  df_essn$TIMESTAMP <- paste(df_essn$date, df_essn$time)
-  df_essn <- within(df_essn, datect <- as.POSIXct(strptime(TIMESTAMP, "%Y-%m-%d %H:%M")))
-  return(df_essn)
-}
-
-#' Collate full output files - but not yet working for collating multiple job files
-#'
-#' "full output" files are harder to read - header is on line 2, data on line 4: use readr::read_csv instead:
-#' This function collates all the full output files.
-#' This function collates all the full output files.
-#' @param fname A character string for the time the run was started, used to identify the relevant files.
-#' @export
-
-read_full_output <- function(fname){
-  df <- readLines(fname)
-  # remove first and third lines, leaving header (line 2) and data (line 4 onwards)
-  df = df[c(-1, -3)]
-  df <- read.csv(textConnection(df), na.strings = na.strings, header = TRUE, stringsAsFactors = FALSE)
-  return(df)
-}
-
 #' Make Date Intervals
 #'
 #' This function creates a number of equally sized time intervals between 
@@ -118,7 +72,10 @@ makeDateIntervals <- function(startDate_period, endDate_period, nIntervals){
 #' startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
 #' endDate_period   <- as.POSIXct(strptime(endDate_period,   "%Y-%m-%d %H:%M"), tz = "UTC")
 #' myJob <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
-#' df_project <- read_excel("C:/Users/plevy/Documents/eddystore/data-raw/eddystore_proc_table.xlsx")
+#' # read eddypro project data on local disk
+#' df_project <- read.csv("C:/Users/plevy/Documents/eddystore_procdata/eddystore_proc_table.csv", stringsAsFactors = FALSE)
+#' df_project$startDate <- as.POSIXct(strptime(df_project$startDate, "%d/%m/%Y %H:%M"), tz = "UTC")
+#' df_project$endDate   <- as.POSIXct(strptime(df_project$endDate, "%d/%m/%Y %H:%M"), tz = "UTC")
 #' myJob <- adjustIntervals(stationID_proc, procID_proc, myJob)
 
 adjustIntervals <- function(stationID_proc, procID_proc, intervals){
@@ -182,7 +139,10 @@ adjustIntervals <- function(stationID_proc, procID_proc, intervals){
 #' startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
 #' endDate_period   <- as.POSIXct(strptime(endDate_period,   "%Y-%m-%d %H:%M"), tz = "UTC")
 #' myJob <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
-#' df_project <- read_excel("C:/Users/plevy/Documents/eddystore/data-raw/eddystore_proc_table.xlsx")
+#' # read eddypro project data on local disk
+#' df_project <- read.csv("C:/Users/plevy/Documents/eddystore_procdata/eddystore_proc_table.csv", stringsAsFactors = FALSE)
+#' df_project$startDate <- as.POSIXct(strptime(df_project$startDate, "%d/%m/%Y %H:%M"), tz = "UTC")
+#' df_project$endDate   <- as.POSIXct(strptime(df_project$endDate, "%d/%m/%Y %H:%M"), tz = "UTC")
 #' myJob <- adjustIntervals(stationID_proc, procID_proc, myJob)
 #' myJob <- writeProjectFiles(myJob)
 
@@ -217,12 +177,12 @@ writeProjectFiles <- function(job){
     
     # find line where "project" ID is given
     ind <- !is.na(str_match(eddyproProjectFileText, "project_id="))
-    # set flag to use subsets
+    # write new text into this line
     eddyproProjectFileText[ind] <- paste0("project_id=job", i)
     
     # find line where flag for sub-period processing occurs
     ind <- !is.na(str_match(eddyproProjectFileText, "pr_subset="))
-    # set flag to use subsets
+    # write new text into this line
     eddyproProjectFileText[ind] <- "pr_subset=1"
         
     # find indices where start date appears
@@ -269,7 +229,10 @@ writeProjectFiles <- function(job){
 #' startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
 #' endDate_period   <- as.POSIXct(strptime(endDate_period,   "%Y-%m-%d %H:%M"), tz = "UTC")
 #' myJob <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
-#' df_project <- read_excel("C:/Users/plevy/Documents/eddystore/data-raw/eddystore_proc_table.xlsx")
+#' # read eddypro project data on local disk
+#' df_project <- read.csv("C:/Users/plevy/Documents/eddystore_procdata/eddystore_proc_table.csv", stringsAsFactors = FALSE)
+#' df_project$startDate <- as.POSIXct(strptime(df_project$startDate, "%d/%m/%Y %H:%M"), tz = "UTC")
+#' df_project$endDate   <- as.POSIXct(strptime(df_project$endDate, "%d/%m/%Y %H:%M"), tz = "UTC")
 #' myJob <- adjustIntervals(stationID_proc, procID_proc, myJob)
 #' myJob <- writeProjectFiles(myJob)
 #' myJob <- writeJobFile(myJob)
@@ -322,7 +285,10 @@ writeJobFile <- function(job, binpath = "/gws/nopw/j04/eddystore/eddypro-engine_
 #' endDate_period   <- "2007-12-31 23:30"
 #' startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
 #' endDate_period   <- as.POSIXct(strptime(endDate_period,   "%Y-%m-%d %H:%M"), tz = "UTC")
-#' df_project <- read_excel("C:/Users/plevy/Documents/eddystore/data-raw/eddystore_proc_table.xlsx")
+#' # read eddypro project data on local disk
+#' df_project <- read.csv("C:/Users/plevy/Documents/eddystore_procdata/eddystore_proc_table.csv", stringsAsFactors = FALSE)
+#' df_project$startDate <- as.POSIXct(strptime(df_project$startDate, "%d/%m/%Y %H:%M"), tz = "UTC")
+#' df_project$endDate   <- as.POSIXct(strptime(df_project$endDate, "%d/%m/%Y %H:%M"), tz = "UTC")
 #' myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors)
 
 createJob <- function(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors){
@@ -350,7 +316,10 @@ createJob <- function(stationID_proc, procID_proc, startDate_period, endDate_per
 #' endDate_period   <- "2007-12-31 23:30"
 #' startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
 #' endDate_period   <- as.POSIXct(strptime(endDate_period,   "%Y-%m-%d %H:%M"), tz = "UTC")
-#' df_project <- read_excel("C:/Users/plevy/Documents/eddystore/data-raw/eddystore_proc_table.xlsx")
+#' # read eddypro project data on local disk
+#' df_project <- read.csv("C:/Users/plevy/Documents/eddystore_procdata/eddystore_proc_table.csv", stringsAsFactors = FALSE)
+#' df_project$startDate <- as.POSIXct(strptime(df_project$startDate, "%d/%m/%Y %H:%M"), tz = "UTC")
+#' df_project$endDate   <- as.POSIXct(strptime(df_project$endDate, "%d/%m/%Y %H:%M"), tz = "UTC")
 #' myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors)
 #' myJob <- runJob(myJob)
 
@@ -360,4 +329,128 @@ runJob <- function(job){
   err <- system(cmd); job_startTime <- Sys.time()
   err; job_startTime
   return(list = c(job, err = err, job_startTime = job_startTime))
+}
+
+#' Convert paths in Eddypro project files
+#'
+#' This function changes all references to paths in uploaded project files to the eddystore path names.
+#' @param filename A character string for the path to the location of the station directory on JASMIN.
+#' @param station_dir A character string for the path to the location of the station directory on JASMIN.
+#' @return eddyproProjectPathName_new File name for project file with eddystore paths. The side effect is to write this file.
+#' @export
+#' @examples
+#' eddyproProjectPathName <- "/gws/nopw/j04/eddystore/stations/EasterBush/proc/processing2.eddypro"
+#' station_dir <- "/gws/nopw/j04/eddystore/stations/EasterBush"
+#' convertProjectPath(eddyproProjectPathName, station_dir)
+
+convertProjectPath <- function(eddyproProjectPathName, station_dir){
+    # make file name for new .eddypro project file
+    eddyproProjectFileName <- basename(eddyproProjectPathName)
+    eddyproProjectPathName_new <- paste0(station_dir, "/projects/", str_sub(eddyproProjectFileName, start = 1, 
+      end = str_length(eddyproProjectFileName)-8), ".eddypro")
+    
+    eddyproProjectPathName_backup <- paste0(station_dir, "/projects/tmp_prj/", str_sub(eddyproProjectFileName, start = 1, 
+      end = str_length(eddyproProjectFileName)-8), ".eddypro")
+    
+    # read the .eddypro file into a character vector
+    eddyproProjectFileText <- readLines(con <- file(eddyproProjectPathName, "r+"))
+    close(con)
+
+    # make a back-up copy of the original file in tmp_prj    
+    writeLines(eddyproProjectFileText, con = eddyproProjectPathName_backup)
+    
+    # find line where "proj_file" is given
+    # bizarrely, "proj_file" is the field for the .metadata file
+    ind <- !is.na(str_match(eddyproProjectFileText, "proj_file="))
+    # write new text into this line  
+    eddyproProjectFileText[ind] <- paste0("proj_file=", station_dir, "/metadata/", basename(eddyproProjectFileText[ind]))  
+    
+    # find line for output path
+    ind <- !is.na(str_match(eddyproProjectFileText, "out_path="))
+    # write new text into this line
+    eddyproProjectFileText[ind] <- paste0("out_path=", station_dir, "/output") 
+        
+    # find line for previous output path
+    ind <- !is.na(str_match(eddyproProjectFileText, "ex_file="))
+    # if entry not empty, write new text into this line
+    if (eddyproProjectFileText[ind] != "ex_file="){
+      eddyproProjectFileText[ind] <- paste0("ex_file=", station_dir,  "/output/", basename(eddyproProjectFileText[ind])) 
+    }
+    
+    # find line for binned spectral output path
+    ind <- !is.na(str_match(eddyproProjectFileText, "sa_bin_spectra="))
+    # if entry not empty, write new text into this line
+    if (eddyproProjectFileText[ind] != "sa_bin_spectra="){
+      eddyproProjectFileText[ind] <- paste0("sa_bin_spectra=", station_dir,  "/output/eddypro_binned_cospectra") 
+    }
+    # find line for full spectral output path
+    ind <- !is.na(str_match(eddyproProjectFileText, "sa_full_spectra="))
+    # if entry not empty, write new text into this line
+    if (eddyproProjectFileText[ind] != "sa_full_spectra="){
+    eddyproProjectFileText[ind] <- paste0("sa_full_spectra=", station_dir,  "/output/eddypro_full_cospectra")      
+    }
+    
+    # find line for previous execution path - not sure if needed
+    ind <- !is.na(str_match(eddyproProjectFileText, "ex_dir="))
+    # if entry not empty, write new text into this line
+    if (eddyproProjectFileText[ind] != "ex_dir="){
+    eddyproProjectFileText[ind] <- paste0("ex_dir=", station_dir,  "/output")      
+    }
+    
+    # find line for raw data path
+    ind <- !is.na(str_match(eddyproProjectFileText, "data_path="))
+    # write new text into this line
+    eddyproProjectFileText[ind] <- paste0("data_path=", station_dir,  "/raw_files")      
+    
+    # write all lines to file
+    print(paste0("Writing ", eddyproProjectPathName_new))
+    writeLines(eddyproProjectFileText, con = eddyproProjectPathName_new)
+
+ return(eddyproProjectPathName_new)
+}
+
+#' Collate essential output files
+#'
+#' Note that curently "EasterBush" is hard-coded in the path - need to pass path argument
+#' This function collates all the essential output files.
+#' @param job_time A character string for the time the run was started, used to identify the relevant files.
+#' @export
+
+get_essential_output_df <- function(job_time){
+  na.strings = c("NAN", "7999", "-7999","-999","999","9999.99", "-9999.0", "-9999.0000000000000","9999","9999","-9999")
+  job_time_ch <- str_split(job_time, "[-: ]")[[1]]
+  YYYY <- job_time_ch[1]
+  mm <- job_time_ch[2]
+  dd <- job_time_ch[3]
+  HH <- job_time_ch[4]
+  MM <- job_time_ch[5]
+  SS <- job_time_ch[6]
+
+  # "essentials" output files created in a ten minute slot, hoping not on a 10-min boundary (i.e. 29 to 30 mins)
+  to_match <- paste0("eddypro_job.*_essentials_", YYYY, "-", mm, "-", dd, "T", HH, substr(MM, 1, 1))
+  list.files(path = "./stations/EasterBush/output", pattern = to_match, full.names = TRUE)
+  files_out <- list.files(path = "./stations/EasterBush/output", pattern = to_match, full.names = TRUE)
+  df_essn <- do.call(rbind, lapply(files_out, FUN = read.csv, na.strings = na.strings, header = TRUE, stringsAsFactors = FALSE))
+  #dim(df_essn)
+  #head(df_essn[,1:9])
+  #str(df_essn[,1:9])
+  df_essn$TIMESTAMP <- paste(df_essn$date, df_essn$time)
+  df_essn <- within(df_essn, datect <- as.POSIXct(strptime(TIMESTAMP, "%Y-%m-%d %H:%M")))
+  return(df_essn)
+}
+
+#' Collate full output files - but not yet working for collating multiple job files
+#'
+#' "full output" files are harder to read - header is on line 2, data on line 4: use readr::read_csv instead:
+#' This function collates all the full output files.
+#' This function collates all the full output files.
+#' @param fname A character string for the time the run was started, used to identify the relevant files.
+#' @export
+
+read_full_output <- function(fname){
+  df <- readLines(fname)
+  # remove first and third lines, leaving header (line 2) and data (line 4 onwards)
+  df = df[c(-1, -3)]
+  df <- read.csv(textConnection(df), na.strings = na.strings, header = TRUE, stringsAsFactors = FALSE)
+  return(df)
 }

@@ -5,7 +5,6 @@ Authors@R: person("Peter", "Levy", email = "plevy@ceh.ac.uk", role = c("aut", "c
 Description: Parallel Processing Of Eddy Covariance Data On .
 Depends: R (>= 3.5.1),
          dplyr,
-         readxl,
          stringr
 License: MIT
 Encoding: UTF-8
@@ -13,3 +12,4 @@ LazyData: true
 RoxygenNote: 6.1.1
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
+Imports: RCurl

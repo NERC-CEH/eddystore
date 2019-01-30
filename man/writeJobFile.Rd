@@ -4,10 +4,18 @@
 \alias{writeJobFile}
 \title{Write LOTUS batch job files for all intervals}
 \usage{
-writeJobFile(job)
+writeJobFile(job,
+  binpath = "/gws/nopw/j04/eddystore/eddypro-engine_6.2.0/eddypro-engine/bin/linux/eddypro_rp",
+  switch_OS = "-s linux", eddystore_path = "/gws/nopw/j04/eddystore")
 }
 \arguments{
 \item{job}{An eddystore job object made with the writeProjectFiles function}
+
+\item{binpath}{Path to the eddy_rp raw data processing binary file}
+
+\item{switch_OS}{Switch betweeen linux and windows versions}
+
+\item{eddystore_path}{The path to eddystore}
 }
 \description{
 This function writes a LOTUS batch job file for each of the intervals specified.
@@ -23,7 +31,10 @@ endDate_period   <- "2007-12-31 23:30"
 startDate_period <- as.POSIXct(strptime(startDate_period, "\%Y-\%m-\%d \%H:\%M"), tz = "UTC")
 endDate_period   <- as.POSIXct(strptime(endDate_period,   "\%Y-\%m-\%d \%H:\%M"), tz = "UTC")
 myJob <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
-df_project <- read_excel("C:/Users/plevy/Documents/eddystore/data-raw/eddystore_proc_table.xlsx")
+# read eddypro project data on local disk
+df_project <- read.csv("C:/Users/plevy/Documents/eddystore_procdata/eddystore_proc_table.csv", stringsAsFactors = FALSE)
+df_project$startDate <- as.POSIXct(strptime(df_project$startDate, "\%d/\%m/\%Y \%H:\%M"), tz = "UTC")
+df_project$endDate   <- as.POSIXct(strptime(df_project$endDate, "\%d/\%m/\%Y \%H:\%M"), tz = "UTC")
 myJob <- adjustIntervals(stationID_proc, procID_proc, myJob)
 myJob <- writeProjectFiles(myJob)
 myJob <- writeJobFile(myJob)
