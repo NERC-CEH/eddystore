@@ -17,16 +17,21 @@ Gives: Error in system(command, as.integer(flag), f, stdout, stderr, timeout) :
 \examples{
 stationID_proc <- "EasterBush"
 procID_proc <- "CO2_H2O"
-nProcessors <- 4
+nIntervals <- 4
 startDate_period <- "2006-07-01 00:00"
 endDate_period   <- "2007-12-31 23:30"
 startDate_period <- as.POSIXct(strptime(startDate_period, "\%Y-\%m-\%d \%H:\%M"), tz = "UTC")
 endDate_period   <- as.POSIXct(strptime(endDate_period,   "\%Y-\%m-\%d \%H:\%M"), tz = "UTC")
+myJob <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
 # read eddypro project data on local disk
 df_project <- read.csv("C:/Users/plevy/Documents/eddystore_procdata/eddystore_proc_table.csv", stringsAsFactors = FALSE)
 df_project$startDate <- as.POSIXct(strptime(df_project$startDate, "\%d/\%m/\%Y \%H:\%M"), tz = "UTC")
 df_project$endDate   <- as.POSIXct(strptime(df_project$endDate, "\%d/\%m/\%Y \%H:\%M"), tz = "UTC")
-myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors)
+myJob <- adjustIntervals(stationID_proc, procID_proc, myJob)
+myJob <- writeProjectFiles(myJob)
+myJob <- writeJobFile(myJob, binpath = "N:/0Peter/curr/ECsystem/eddypro", 
+                             switch_OS = "-s linux",
+                             eddystore_path = "N:/0Peter/curr/ECsystem/eddystore")
 myJob <- runJob(myJob)
 }
 \seealso{

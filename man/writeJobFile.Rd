@@ -37,7 +37,9 @@ df_project$startDate <- as.POSIXct(strptime(df_project$startDate, "\%d/\%m/\%Y \
 df_project$endDate   <- as.POSIXct(strptime(df_project$endDate, "\%d/\%m/\%Y \%H:\%M"), tz = "UTC")
 myJob <- adjustIntervals(stationID_proc, procID_proc, myJob)
 myJob <- writeProjectFiles(myJob)
-myJob <- writeJobFile(myJob)
+myJob <- writeJobFile(myJob, binpath = "N:/0Peter/curr/ECsystem/eddypro", 
+                             switch_OS = "-s linux",
+                             eddystore_path = "N:/0Peter/curr/ECsystem/eddystore")
 }
 \seealso{
 \code{\link{adjustIntervals}} for the adjusting this to match boundaries between processing files.

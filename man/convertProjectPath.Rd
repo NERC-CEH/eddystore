@@ -15,10 +15,13 @@ convertProjectPath(eddyproProjectPathName, station_dir)
 eddyproProjectPathName_new File name for project file with eddystore paths. The side effect is to write this file.
 }
 \description{
+Need to add biomet file path changes biom_file and biom_dir
+}
+\details{
 This function changes all references to paths in uploaded project files to the eddystore path names.
 }
 \examples{
-eddyproProjectPathName <- "C:/Users/plevy/Documents/eddystore_procdata/stations/EasterBush/proc/processing2.eddypro"
-station_dir <- "/gws/nopw/j04/eddystore/stations/EasterBush"
+eddyproProjectPathName <- "C:/Users/plevy/Documents/eddystore_procdata/stations/EasterBush/projects/processing2.eddypro"
+station_dir <- "C:/Users/plevy/Documents/eddystore_procdata/stations/EasterBush"
 convertProjectPath(eddyproProjectPathName, station_dir)
 }

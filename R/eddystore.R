@@ -235,7 +235,9 @@ writeProjectFiles <- function(job){
 #' df_project$endDate   <- as.POSIXct(strptime(df_project$endDate, "%d/%m/%Y %H:%M"), tz = "UTC")
 #' myJob <- adjustIntervals(stationID_proc, procID_proc, myJob)
 #' myJob <- writeProjectFiles(myJob)
-#' myJob <- writeJobFile(myJob)
+#' myJob <- writeJobFile(myJob, binpath = "N:/0Peter/curr/ECsystem/eddypro", 
+#'                              switch_OS = "-s linux",
+#'                              eddystore_path = "N:/0Peter/curr/ECsystem/eddystore")
 
 writeJobFile <- function(job, binpath = "/gws/nopw/j04/eddystore/eddypro-engine_6.2.0/eddypro-engine/bin/linux/eddypro_rp", 
                             switch_OS = "-s linux",
@@ -247,8 +249,7 @@ writeJobFile <- function(job, binpath = "/gws/nopw/j04/eddystore/eddypro-engine_
   
   # write contents of bsub queue file
   writeLines("#!/bin/bash", con = jobFileName)
-  write("#!/bin/bash", file = jobFileName, append = TRUE)
-  write("#BSUB -q short-serial", file = jobFileName, append = TRUE)
+  write("#BSUB -q short-serial", file = jobFileName, append = TRUE) # this sets a maximum of 24 h run-time; use long-serial	for longer
   write("#BSUB -o %J.out", file = jobFileName, append = TRUE)
   write("#BSUB -e %J.err", file = jobFileName, append = TRUE)
   #write("#BSUB -W 00:10", file = jobFileName, append = TRUE) # this sets an extra limit on wall time used if needed
@@ -289,7 +290,7 @@ writeJobFile <- function(job, binpath = "/gws/nopw/j04/eddystore/eddypro-engine_
 #' df_project <- read.csv("C:/Users/plevy/Documents/eddystore_procdata/eddystore_proc_table.csv", stringsAsFactors = FALSE)
 #' df_project$startDate <- as.POSIXct(strptime(df_project$startDate, "%d/%m/%Y %H:%M"), tz = "UTC")
 #' df_project$endDate   <- as.POSIXct(strptime(df_project$endDate, "%d/%m/%Y %H:%M"), tz = "UTC")
-#' myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors)
+#' # myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors)
 
 createJob <- function(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors){
   job <- makeDateIntervals(startDate_period, endDate_period, nProcessors)
@@ -311,16 +312,21 @@ createJob <- function(stationID_proc, procID_proc, startDate_period, endDate_per
 #' @examples
 #' stationID_proc <- "EasterBush"
 #' procID_proc <- "CO2_H2O"
-#' nProcessors <- 4
+#' nIntervals <- 4
 #' startDate_period <- "2006-07-01 00:00"
 #' endDate_period   <- "2007-12-31 23:30"
 #' startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
 #' endDate_period   <- as.POSIXct(strptime(endDate_period,   "%Y-%m-%d %H:%M"), tz = "UTC")
+#' myJob <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
 #' # read eddypro project data on local disk
 #' df_project <- read.csv("C:/Users/plevy/Documents/eddystore_procdata/eddystore_proc_table.csv", stringsAsFactors = FALSE)
 #' df_project$startDate <- as.POSIXct(strptime(df_project$startDate, "%d/%m/%Y %H:%M"), tz = "UTC")
 #' df_project$endDate   <- as.POSIXct(strptime(df_project$endDate, "%d/%m/%Y %H:%M"), tz = "UTC")
-#' myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors)
+#' myJob <- adjustIntervals(stationID_proc, procID_proc, myJob)
+#' myJob <- writeProjectFiles(myJob)
+#' myJob <- writeJobFile(myJob, binpath = "N:/0Peter/curr/ECsystem/eddypro", 
+#'                              switch_OS = "-s linux",
+#'                              eddystore_path = "N:/0Peter/curr/ECsystem/eddystore")
 #' myJob <- runJob(myJob)
 
 runJob <- function(job){
@@ -333,14 +339,16 @@ runJob <- function(job){
 
 #' Convert paths in Eddypro project files
 #'
+#' Need to add biomet file path changes biom_file and biom_dir
+#'
 #' This function changes all references to paths in uploaded project files to the eddystore path names.
 #' @param filename A character string for the path to the location of the station directory on JASMIN.
 #' @param station_dir A character string for the path to the location of the station directory on JASMIN.
 #' @return eddyproProjectPathName_new File name for project file with eddystore paths. The side effect is to write this file.
 #' @export
 #' @examples
-#' eddyproProjectPathName <- "/gws/nopw/j04/eddystore/stations/EasterBush/proc/processing2.eddypro"
-#' station_dir <- "/gws/nopw/j04/eddystore/stations/EasterBush"
+#' eddyproProjectPathName <- "C:/Users/plevy/Documents/eddystore_procdata/stations/EasterBush/projects/processing2.eddypro"
+#' station_dir <- "C:/Users/plevy/Documents/eddystore_procdata/stations/EasterBush"
 #' convertProjectPath(eddyproProjectPathName, station_dir)
 
 convertProjectPath <- function(eddyproProjectPathName, station_dir){

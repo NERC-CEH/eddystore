@@ -33,7 +33,7 @@ endDate_period   <- as.POSIXct(strptime(endDate_period,   "\%Y-\%m-\%d \%H:\%M")
 df_project <- read.csv("C:/Users/plevy/Documents/eddystore_procdata/eddystore_proc_table.csv", stringsAsFactors = FALSE)
 df_project$startDate <- as.POSIXct(strptime(df_project$startDate, "\%d/\%m/\%Y \%H:\%M"), tz = "UTC")
 df_project$endDate   <- as.POSIXct(strptime(df_project$endDate, "\%d/\%m/\%Y \%H:\%M"), tz = "UTC")
-myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors)
+# myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors)
 }
 \seealso{
 \code{\link{adjustIntervals}} for the adjusting this to match boundaries between project files.
