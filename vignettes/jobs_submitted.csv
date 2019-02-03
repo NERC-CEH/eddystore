@@ -1,0 +1,4 @@
+"","userID","job_requestID","siteID","stationID","procID","startDate","endDate","nProcessors","submitted"
+"1","plevy@ceh.ac.uk","JR0001","EB","EasterBush","CO2_H2O",2008-07-01,2008-07-04 23:30:00,4,TRUE
+"userID" "job_requestID" "siteID" "stationID" "procID" "startDate" "endDate" "nProcessors" "submitted"
+"1" "plevy@ceh.ac.uk" "JR0001" "EB" "EasterBush" "CO2_H2O" 2008-07-01 2008-07-04 23:30:00 4 TRUE

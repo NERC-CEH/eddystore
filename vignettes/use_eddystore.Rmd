@@ -104,7 +104,8 @@ myJob <- writeJobFile(myJob, binpath = "N:/0Peter/curr/ECsystem/eddypro",
                             switch_OS = "-s linux",
                             eddystore_path = "N:/0Peter/curr/ECsystem/eddystore")
 myJob
-
+as.data.frame(myJob)
+View(as.data.frame(myJob))
 # all in a oner
 nProcessors <- 4
 # how many intervals to split processing run into
