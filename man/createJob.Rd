@@ -5,7 +5,11 @@
 \title{Create Processing Job}
 \usage{
 createJob(stationID_proc, procID_proc, startDate_period, endDate_period,
-  nProcessors)
+  nProcessors,
+  fname_df_project = "/gws/nopw/j04/eddystore/eddystore_projects/df_eddystore_projects.csv",
+  binpath = "/gws/nopw/j04/eddystore/eddypro-engine_6.2.0/eddypro-engine/bin/linux/eddypro_rp",
+  switch_OS = "-s linux", eddystore_path = "/gws/nopw/j04/eddystore",
+  job_name = "eddytest", user_email = "plevy@ceh.ac.uk")
 }
 \arguments{
 \item{stationID_proc}{A character string identifying a station in the project data frame.}
@@ -17,6 +21,21 @@ createJob(stationID_proc, procID_proc, startDate_period, endDate_period,
 \item{endDate_period}{A character string for the time the run was started, used to identify the relevant files.}
 
 \item{nProcessors}{An integer number of processors to use, equal to the number of time intervals to split the processing into.}
+
+\item{fname_df_project}{Path to the eddystore project file table.}
+
+\item{binpath}{Path to the eddy_rp raw data processing binary file.}
+
+\item{switch_OS}{Switch betweeen linux and windows versions.}
+
+\item{eddystore_path}{The path to eddystore.}
+
+\item{job_name}{The job name identifier given in df_job_requests.}
+
+\item{user_email}{E-mail address to send notifications to.}
+}
+\value{
+An eddystore job object.
 }
 \description{
 This function creates an eddypro processing job to be run on LOTUS.
@@ -29,11 +48,10 @@ startDate_period <- "2006-07-01 00:00"
 endDate_period   <- "2007-12-31 23:30"
 startDate_period <- as.POSIXct(strptime(startDate_period, "\%Y-\%m-\%d \%H:\%M"), tz = "UTC")
 endDate_period   <- as.POSIXct(strptime(endDate_period,   "\%Y-\%m-\%d \%H:\%M"), tz = "UTC")
-# read eddypro project data on local disk
-df_project <- read.csv("C:/Users/plevy/Documents/eddystore_procdata/eddystore_proc_table.csv", stringsAsFactors = FALSE)
-df_project$startDate <- as.POSIXct(strptime(df_project$startDate, "\%d/\%m/\%Y \%H:\%M"), tz = "UTC")
-df_project$endDate   <- as.POSIXct(strptime(df_project$endDate, "\%d/\%m/\%Y \%H:\%M"), tz = "UTC")
-# myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors)
+myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors,
+    fname_df_project = "C:/Users/plevy/Documents/eddystore_projects/df_eddystore_projects.csv", 
+    eddystore_path = "N:/0Peter/curr/ECsystem/eddystore",
+    job_name = "createJob_example", user_email = "plevy@ceh.ac.uk")
 }
 \seealso{
 \code{\link{adjustIntervals}} for the adjusting this to match boundaries between project files.

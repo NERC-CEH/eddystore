@@ -7,9 +7,9 @@
 convertProjectPath(eddyproProjectPathName, station_dir)
 }
 \arguments{
-\item{station_dir}{A character string for the path to the location of the station directory on JASMIN.}
+\item{eddyproProjectPathName}{Path to the location of the uploaded project file on JASMIN.}
 
-\item{filename}{A character string for the path to the location of the station directory on JASMIN.}
+\item{station_dir}{Path to the location of the station directory on JASMIN e.g. "/gws/nopw/j04/eddystore/stations/EasterBush".}
 }
 \value{
 eddyproProjectPathName_new File name for project file with eddystore paths. The side effect is to write this file.
@@ -18,10 +18,10 @@ eddyproProjectPathName_new File name for project file with eddystore paths. The 
 Need to add biomet file path changes biom_file and biom_dir
 }
 \details{
-This function changes all references to paths in uploaded project files to the eddystore path names.
+This function changes all references to paths in an uploaded project file to the eddystore path names.
 }
 \examples{
-eddyproProjectPathName <- "C:/Users/plevy/Documents/eddystore_procdata/stations/EasterBush/projects/processing2.eddypro"
-station_dir <- "C:/Users/plevy/Documents/eddystore_procdata/stations/EasterBush"
+eddyproProjectPathName <- "C:/Users/plevy/Documents/eddystore_projects/stations/EasterBush/projects/processing2.eddypro"
+station_dir <- "C:/Users/plevy/Documents/eddystore_projects/stations/EasterBush"
 convertProjectPath(eddyproProjectPathName, station_dir)
 }

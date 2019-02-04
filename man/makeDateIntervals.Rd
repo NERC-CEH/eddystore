@@ -13,6 +13,9 @@ makeDateIntervals(startDate_period, endDate_period, nIntervals)
 
 \item{nIntervals}{An integer number of intervals to use to split the processing into.}
 }
+\value{
+An object with vectors of start and end dates for n intervals .
+}
 \description{
 This function creates a number of equally sized time intervals between 
 the specified start and end times.

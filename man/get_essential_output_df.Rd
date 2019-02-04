@@ -4,12 +4,14 @@
 \alias{get_essential_output_df}
 \title{Collate essential output files}
 \usage{
-get_essential_output_df(job_time)
+get_essential_output_df(job)
 }
 \arguments{
-\item{job_time}{A character string for the time the run was started, used to identify the relevant files.}
+\item{job}{An eddystore job object made with the createJob function}
+}
+\value{
+A data frame of the concatenated essential output files from each job.
 }
 \description{
 Note that curently "EasterBush" is hard-coded in the path - need to pass path argument
-This function collates all the essential output files.
 }

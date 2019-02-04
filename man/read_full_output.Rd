@@ -9,6 +9,9 @@ read_full_output(fname)
 \arguments{
 \item{fname}{A character string for the time the run was started, used to identify the relevant files.}
 }
+\value{
+A data frame of the concatenated full output files from each job.
+}
 \description{
 "full output" files are harder to read - header is on line 2, data on line 4: use readr::read_csv instead:
 This function collates all the full output files.

@@ -9,6 +9,9 @@ writeProjectFiles(job)
 \arguments{
 \item{job}{A list of the start and end times of each interval, created by makeDateIntervals.}
 }
+\value{
+An eddystore job object.
+}
 \description{
 This function writes an eddypro project file for each of the intervals specified.
 }
@@ -20,12 +23,9 @@ startDate_period <- "2006-07-01 00:00"
 endDate_period   <- "2007-12-31 23:30"
 startDate_period <- as.POSIXct(strptime(startDate_period, "\%Y-\%m-\%d \%H:\%M"), tz = "UTC")
 endDate_period   <- as.POSIXct(strptime(endDate_period,   "\%Y-\%m-\%d \%H:\%M"), tz = "UTC")
-myJob <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
-# read eddypro project data on local disk
-df_project <- read.csv("C:/Users/plevy/Documents/eddystore_procdata/eddystore_proc_table.csv", stringsAsFactors = FALSE)
-df_project$startDate <- as.POSIXct(strptime(df_project$startDate, "\%d/\%m/\%Y \%H:\%M"), tz = "UTC")
-df_project$endDate   <- as.POSIXct(strptime(df_project$endDate, "\%d/\%m/\%Y \%H:\%M"), tz = "UTC")
-myJob <- adjustIntervals(stationID_proc, procID_proc, myJob)
+intervals <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
+fname_df_project = "C:/Users/plevy/Documents/eddystore_projects/df_eddystore_projects.csv"
+myJob <- adjustIntervals(stationID_proc, procID_proc, intervals, fname_df_project = fname_df_project)
 myJob <- writeProjectFiles(myJob)
 }
 \seealso{

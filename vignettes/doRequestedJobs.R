@@ -81,20 +81,20 @@ for (i in 1:n_jobs){
   # need to add several arguments in function definition for tracking job
   #l_jobs[[i]] <- createJob(df$user_email[i], df$siteID[i], df$stationID[i], df$procID[i], df$startDate[i], df$endDate[i], df$nProcessors[i])
   l_jobs[[i]] <- runJob(l_jobs[[i]])
-  con <- file(paste0("/public/", df$job_requestID[i], "_output.txt"))
+  con <- file(paste0("/public/", df$job_name[i], "_output.txt"))
   if (l_jobs[[i]]$err == 0){ # job submission worked
   df$submitted[i] <- TRUE
-    txt <- paste("Job", df$job_requestID[i], "was submitted successfully.")
+    txt <- paste("Job", df$job_name[i], "was submitted successfully.")
   } else { # it didnt
-    txt <- paste("Job", df$job_requestID[i], "had an error on submission.")
+    txt <- paste("Job", df$job_name[i], "had an error on submission.")
   }
   writeLines(txt, con)
   close(con)
   Sys.sleep(10) # pause for 10 s
   #do something?
   may be no need if we write output to eddystore/public using 
-  #BSUB -o eddystore/public/%J.out
-  #BSUB -e eddystore/public/%J.err
+  #BSUB -o /gws/nopw/j04/eddystore/public/%J.out
+  #BSUB -e /gws/nopw/j04/eddystore/public/%J.err
   and e-mail with
   #BSUB -u mail_user
   #BSUB -N
@@ -136,12 +136,12 @@ for (i in 1:n_jobs){
   cmd <- paste("bjobs -l ", df$jobID[i])
   err <- system(cmd)
   ## need to see what is returned by bjobs, to see if successfully completed or not 
-  con <- file(paste0("/public/", df$job_requestID[i], "_output.txt"))
+  con <- file(paste0("/public/", df$job_name[i], "_output.txt"))
   if (err == 0){ # job completed
   df$completed[i] <- TRUE
-    txt <- paste("Job", df$job_requestID[i], "was completed successfully.")
+    txt <- paste("Job", df$job_name[i], "was completed successfully.")
   } else { # it didnt
-    txt <- paste("Job", df$job_requestID[i], "had an error before completion.")
+    txt <- paste("Job", df$job_name[i], "had an error before completion.")
   }
   writeLines(txt, con)
   close(con)
