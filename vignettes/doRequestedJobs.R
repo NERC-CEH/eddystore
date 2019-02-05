@@ -45,6 +45,7 @@ and three pieces of software:
 
 # read job request file produced by shiny app
 fname_requests <- "N:/0Peter/curr/ECsystem/eddystore/jobs/job_requests/df_job_requests.csv"
+fname_requests <- "/gws/nopw/j04/eddystore/jobs/job_requests/df_job_requests.csv"
 if (file.exists(fname_requests) == FALSE){
   # if no jobs requested, file won't exist, so exit
   quit(save = "no") # need to exit completely?
@@ -54,8 +55,10 @@ if (file.exists(fname_requests) == FALSE){
   df$endDate   <- as.POSIXct(strptime(df$endDate, "%d/%m/%Y %H:%M"), tz = "UTC")
   n_jobs <- dim(df)[1]
   summary(df)
+  ## do we need these, or inherited from checkJobStatus function
   df$submitted <- vector(mode = "logical", length = n_jobs)
-  df$jobID     <- vector(mode = "logical", length = n_jobs)
+  df$completed <- vector(mode = "logical", length = n_jobs)
+  #df$jobID     <- vector(mode = "logical", length = n_jobs)
   l_jobs       <- vector(mode = "list",    length = n_jobs) # declare a list for job objects
   # add a check? if stationID is in df_projects
 }
@@ -64,7 +67,7 @@ if (file.exists(fname_requests) == FALSE){
 # if so, only do following if n_jobs > 0
 # read data frame of eddypro project files
 fname_projects <- "N:/0Peter/curr/ECsystem/eddystore/df_eddystore_projects.csv"
-fname_projects <- "/gws/nopw/j04/eddystore/df_eddystore_projects.csv"
+fname_projects <- "/gws/nopw/j04/eddystore/eddystore_projects/df_eddystore_projects.csv"
 df_project <- read.csv(fname_projects, stringsAsFactors = FALSE)
 df_project$startDate <- as.POSIXct(strptime(df_project$startDate, "%d/%m/%Y %H:%M"), tz = "UTC")
 df_project$endDate   <- as.POSIXct(strptime(df_project$endDate, "%d/%m/%Y %H:%M"), tz = "UTC")
@@ -74,14 +77,25 @@ summary(df_project)
 # for each requested job
 for (i in 1:n_jobs){
   #i = 1
-  ## pass eddystore path as an argument so we can run on PC
-  ## pass df_project as an explicit argument?
-  ## otherwise it is implicit
-  l_jobs[[i]] <- createJob(df$stationID[i], df$procID[i], df$startDate[i], df$endDate[i], df$nProcessors[i])
-  # need to add several arguments in function definition for tracking job
-  #l_jobs[[i]] <- createJob(df$user_email[i], df$siteID[i], df$stationID[i], df$procID[i], df$startDate[i], df$endDate[i], df$nProcessors[i])
+  ## pass eddystore path as an argument so we can run on PC more easily?
+  l_jobs[[i]] <- createJob(
+                  stationID_proc = df$stationID[i], 
+                  procID_proc = df$procID[i], 
+                  startDate_period = df$startDate[i], 
+                  endDate_period = df$endDate[i], 
+                  nProcessors = df$nProcessors[i],
+                  fname_df_project = "C:/Users/plevy/Documents/eddystore_projects/df_eddystore_projects.csv", 
+                  # fname_df_project = "/gws/nopw/j04/eddystore/eddystore_projects/df_eddystore_projects.csv", 
+                  # binpath = "/gws/nopw/j04/eddystore/eddypro-engine_6.2.0/eddypro-engine/bin/linux/eddypro_rp", 
+                  # switch_OS = "-s linux", 
+                  eddystore_path = "N:/0Peter/curr/ECsystem/eddystore", 
+                  job_name = df$job_name[i], 
+                  user_email = df$user_email[i])
+
   l_jobs[[i]] <- runJob(l_jobs[[i]])
-  con <- file(paste0("/public/", df$job_name[i], "_output.txt"))
+  
+  # report progress to files in public folder
+  con <- file(paste0("./", df$job_name[i], "_output.txt"))
   if (l_jobs[[i]]$err == 0){ # job submission worked
   df$submitted[i] <- TRUE
     txt <- paste("Job", df$job_name[i], "was submitted successfully.")
@@ -90,21 +104,32 @@ for (i in 1:n_jobs){
   }
   writeLines(txt, con)
   close(con)
-  Sys.sleep(10) # pause for 10 s
-  #do something?
-  may be no need if we write output to eddystore/public using 
-  #BSUB -o /gws/nopw/j04/eddystore/public/%J.out
-  #BSUB -e /gws/nopw/j04/eddystore/public/%J.err
-  and e-mail with
-  #BSUB -u mail_user
-  #BSUB -N
-https://www.ibm.com/support/knowledgecenter/en/SSETD4_9.1.2/lsf_command_ref/bsub.1.html
-  )  
+  #Sys.sleep(10) # pause for 10 s
+  
+  # # do something?
+  # may be no need if we write output to eddystore/public using 
+  # # BSUB -o /gws/nopw/j04/eddystore/public/%J.out
+  # # BSUB -e /gws/nopw/j04/eddystore/public/%J.err
+  # and e-mail with
+  # # BSUB -u mail_user
+  # # BSUB -N
+# https://www.ibm.com/support/knowledgecenter/en/SSETD4_9.1.2/lsf_command_ref/bsub.1.html
+  # )  
 }
 
-## combine all info one data frame - combine with pre-existing runs in same file?
-## does this work for a list?
-df <- as.data.frame(df, l_jobs)
+# combine all job requests in one data frame 
+## combine with pre-existing runs here?
+l_df_jobs <- lapply(l_jobs, as.data.frame)
+str(l_df_jobs)
+# get first row only in each data frame
+l_df_jobs <- lapply(l_df_jobs, function(l) l[1,])
+df_jobs <- bind_rows(l_df_jobs)
+str(df_jobs)
+df_jobs
+
+names(df)
+names(df_jobs)
+df <- merge(df, df_jobs, by = "job_name", suffixes = c("",".sub"))
 # move successful requested jobs to submitted file
 write.table(subset(df, submitted == TRUE), 
       file = "./jobs_submitted.csv", append = TRUE)

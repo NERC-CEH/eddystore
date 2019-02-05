@@ -231,7 +231,7 @@ adjustIntervals <- function(stationID_proc, procID_proc, intervals, fname_df_pro
 writeProjectFiles <- function(job){
   # make a vector of file names
   nIntervals <- length(job$startDate)
-  v_eddyproProjectFileName <- vector(mode = "character", length = nIntervals)
+  job$v_eddyproProjectFileName <- vector(mode = "character", length = nIntervals)
 
   # make a base project file name, to be incrementally numbered for each interval
   dir_name <- str_split(job$project_filepath[1], "/")[[1]]
@@ -242,11 +242,12 @@ writeProjectFiles <- function(job){
   baseProjectFileName <- paste0(baseProjectFileName, "/tmp_prj/processing.eddypro")
   
   # get the station dir name, 2 from the end (i.e. station/proc/processing.eddypro)
-  station_name <- dir_name[length(dir_name)-2]
+  # use as a check that this is same as sationID? Depends on just directory structure
+  job$station_name <- dir_name[length(dir_name)-2]
   
   # and find the station directory for the eddypro run, for output etc.
-  station_dir <- dir_name[1:(length(dir_name)-2)]
-  station_dir <- str_c(station_dir, collapse = "/")
+  job$station_dir <- dir_name[1:(length(dir_name)-2)]
+  job$station_dir <- str_c(job$station_dir, collapse = "/")
   
   for (i in 1:nIntervals){
     # read the appropriate .eddypro file for this interval into a character vector
@@ -254,7 +255,7 @@ writeProjectFiles <- function(job){
     close(con)
     
     # make .eddypro file name for interval 
-    v_eddyproProjectFileName[i] <- paste0(str_sub(baseProjectFileName, start = 1, 
+    job$v_eddyproProjectFileName[i] <- paste0(str_sub(baseProjectFileName, start = 1, 
       end = str_length(baseProjectFileName)-8), i, ".eddypro")
     
     # find line where "project" ID is given
@@ -278,17 +279,12 @@ writeProjectFiles <- function(job){
     # replace with interval end date
     eddyproProjectFileText[ind] <- paste0(str_sub(eddyproProjectFileText[ind], start = 1, end = 3), 
       "end_date=", job$endDate[i])
-    print(paste0("Writing ", v_eddyproProjectFileName[i]))
-    writeLines(eddyproProjectFileText, con = v_eddyproProjectFileName[i])
-  }  
-  return(list( project_filepath = job$project_filepath,
-                      startDate = job$startDate, 
-                        endDate = job$endDate,
-                     nIntervals = job$nIntervals,
-                   station_name = station_name,
-                   station_dir = station_dir,
-       v_eddyproProjectFileName = v_eddyproProjectFileName,
-            baseProjectFileName = baseProjectFileName))
+    print(paste0("Writing ", job$v_eddyproProjectFileName[i]))
+    writeLines(eddyproProjectFileText, con = job$v_eddyproProjectFileName[i])
+  }
+
+  job$baseProjectFileName <- baseProjectFileName       
+  return(job)
 }
 
 #' Write LOTUS batch job files for all intervals
@@ -344,9 +340,10 @@ writeJobFile <- function(job, binpath = "/gws/nopw/j04/eddystore/eddypro-engine_
         "${LSB_JOBINDEX}", ".eddypro")        
   cmd <- paste(binpath, switch_OS, switch_env, eddyproProcArray)
   write(cmd, file = jobFileName, append = TRUE)
-
   on.exit(close(con))
-  return(list(job, jobFileName = jobFileName, job_name = job_name, user_email = user_email))
+  
+  job$jobFileName <- jobFileName; job$job_name <- job_name; job$user_email <- user_email
+  return(job)
 }
 
 #' Create Processing Job
@@ -418,9 +415,8 @@ createJob <- function(stationID_proc, procID_proc, startDate_period, endDate_per
 runJob <- function(job){
   cmd <- paste0("bsub < ", job$jobFileName)
   # submit the jobs and get the time to identify the output files from this batch
-  err <- system(cmd); job_startTime <- Sys.time()
-  err; job_startTime
-  return(list(job, err = err, job_startTime = job_startTime))
+  job$err <- system(cmd); job$job_startTime <- Sys.time()
+  return(job)
 }
 
 #' Check Status of Job on LOTUS

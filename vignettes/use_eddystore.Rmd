@@ -70,13 +70,23 @@ getwd()
 # Eddystore
 In this vignette, I demonstrate how to run Eddystore.
 
-<!--- { run_example -->
-```{r run_example, eval=FALSE, echo=TRUE, include=TRUE}
+<!--- { convertProjectPath -->
+```{r convertProjectPath, eval=FALSE, echo=TRUE, include=TRUE}
 # convert file paths in project file to eddystore locations
 eddyproProjectPathName <- "/gws/nopw/j04/eddystore/stations/Balmoral/projects/Balmoral.eddypro"
 station_dir <- "/gws/nopw/j04/eddystore/stations/Balmoral"
 convertProjectPath(eddyproProjectPathName, station_dir)
+```
+<!--- } -->
 
+<!--- { make_job_request -->
+```{r make_job_request, eval=FALSE, echo=TRUE, include=TRUE}
+
+```
+<!--- } -->
+
+<!--- { run_example -->
+```{r run_example, eval=FALSE, echo=TRUE, include=TRUE}
 # how many intervals to split processing run into
 nIntervals = 4
 # station for processing run
