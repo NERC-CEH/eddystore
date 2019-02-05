@@ -428,8 +428,8 @@ runJob <- function(job){
 #' @return job_status A character message: "RUN" if still running, "DONE" if finished.
 #' @export
 
-checkJobStatus <- function(job){
-  cmd <- paste("bjobs -a -J", job$job_name)
+checkJobCompleted <- function(job_name){
+  cmd <- paste("bjobs -a -J", job_name)
   # query the job queue to get the status of the job
   bjobs_report <- system(cmd, intern = TRUE)
   # split string on whitespace 
@@ -439,7 +439,14 @@ checkJobStatus <- function(job){
   job_name   <- bjobs_report_ch[7]
   job_SUBMIT_TIME <- str_c(bjobs_report_ch[8:10], collapse = " ")
   print(paste("Job", job_name, "submitted at", job_SUBMIT_TIME, "is", job_status))  
-  return(job_status)
+  return(job_status == "DONE")
+}
+
+# test function for PC, where bjobs doesnt work
+checkJobCompleted_Test <- function(job_name){
+  cmd <- paste("bjobs -a -J", job_name)
+  job_status <- "DONE"
+  return(job_status == "DONE")
 }
 
 #' Collate essential output files
@@ -449,9 +456,9 @@ checkJobStatus <- function(job){
 #' @return A data frame of the concatenated essential output files from each job.
 #' @export
 
-get_essential_output_df <- function(job){
+get_essential_output_df <- function(job_startTime){
   na.strings = c("NAN", "7999", "-7999","-999","999","9999.99", "-9999.0", "-9999.0000000000000","9999","9999","-9999")
-  job_time_ch <- str_split(job$job_startTime, "[-: ]")[[1]]
+  job_time_ch <- str_split(job_startTime, "[-: ]")[[1]]
   YYYY <- job_time_ch[1]
   mm <- job_time_ch[2]
   dd <- job_time_ch[3]

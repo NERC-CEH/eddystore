@@ -28,7 +28,7 @@ and three pieces of software:
 # For scheduled jobs, another cron job adds job requests to the file at fixed intervals (daily).
 # 
 # There are two cron jobs:
-# 1. generateAutomaticJobs.R - writes scheduled job requests to df_job_requests.csv every day
+# 1. scheduleJobs.R - writes scheduled job requests to df_job_requests.csv every day
 # 2. doRequestedJobs.R - create and submit jobs, and handle output
 #    Specific tasks are:
 # 1. create and run the requested jobs
@@ -42,6 +42,11 @@ and three pieces of software:
 #       completedOK == TRUE  & concatenatedOK == FALSE  = needs concatenating
 #       completedOK == TRUE  & concatenatedOK == TRUE   = already concatenated, no action
 #     add another task for processing further (met data, gap-filling, sums, plots) here?
+
+# read previously submitted jobs
+# we add requested jobs to this after they have been successfully submitted
+#df_submitted <- read.csv(file = "./jobs_submitted.csv", stringsAsFactors = FALSE)
+load(file = "./jobs_submitted.RData", verbose = TRUE)
 
 # read job request file produced by shiny app
 fname_requests <- "N:/0Peter/curr/ECsystem/eddystore/jobs/job_requests/df_job_requests.csv"
@@ -118,76 +123,63 @@ for (i in 1:n_jobs){
 }
 
 # combine all job requests in one data frame 
-## combine with pre-existing runs here?
 l_df_jobs <- lapply(l_jobs, as.data.frame)
 str(l_df_jobs)
 # get first row only in each data frame
 l_df_jobs <- lapply(l_df_jobs, function(l) l[1,])
 df_jobs <- bind_rows(l_df_jobs)
 str(df_jobs)
-df_jobs
+View(df)
 
 names(df)
 names(df_jobs)
 df <- merge(df, df_jobs, by = "job_name", suffixes = c("",".sub"))
-# move successful requested jobs to submitted file
-write.table(subset(df, submitted == TRUE), 
-      file = "./jobs_submitted.csv", append = TRUE)
-# and unsuccessful requested jobs to failed file
-write.csv(subset(df, submitted == FALSE), 
-      file = "/jobs/jobs_failedToSubmit.csv", append = TRUE)
-# and delete the original request file 
-# check cron job has permission to delete this file
-file.remove(fname_requests)
-# or rename
-#file.rename(fname_requests, paste0(fname_requests, ".processed"))
 
-# read jobs_submitted.csv
-fname_submitted <- "./jobs_submitted.csv"
-if (file.exists(fname_submitted) == FALSE){
-  # if no jobs submitted, file won't exist, so exit
-  quit(save = "no") # need to exit completely?
-} else { 
-  df <- read.csv(fname_submitted, stringsAsFactors = FALSE)
-  n_jobs <- dim(df)[1]
-  summary(df)
-  df$completed <- vector(mode = "logical", length = n_jobs)
-  # add a check? if stationID is in df_projects
-}
+# report unsuccessful requested jobs to failure file
+write.table(subset(df, submitted == FALSE), sep=",", 
+      file = "./jobs_failedToSubmit.csv", append = TRUE)
+# and remove them
+df <- subset(df, submitted == TRUE)
+
+# add requested jobs to those previously submitted
+df <- rbind(df_submitted, df)
+dim(df_submitted)
+dim(df)
+
+completedNow <- sapply(df$job_name, checkJobCompleted_Test)
+completedNow <- sapply(df$job_name, checkJobCompleted)
 
 # for each submitted job
-for (i in 1:n_jobs){
+for (i in 1:length(df[,1])){
   #i = 1
-  cmd <- paste("bjobs -l ", df$jobID[i])
-  err <- system(cmd)
-  ## need to see what is returned by bjobs, to see if successfully completed or not 
-  con <- file(paste0("/public/", df$job_name[i], "_output.txt"))
-  if (err == 0){ # job completed
-  df$completed[i] <- TRUE
+  if (completedNow[i] == TRUE & df$completed[i] == FALSE){
+    df$completed[i] <- TRUE
+    con <- file(paste0("/public/", df$job_name[i], "_output.txt"))
     txt <- paste("Job", df$job_name[i], "was completed successfully.")
-  } else { # it didnt
-    txt <- paste("Job", df$job_name[i], "had an error before completion.")
-  }
-  writeLines(txt, con)
-  close(con)
-  Sys.sleep(10) # pause for 10 s
+    writeLines(txt, con)
+    close(con)
+    # concatenate output and move to /public
+    ## need to editfunction to add output path
+    df_essn <- get_essential_output_df(df$job_startTime[i])
+    fname <- paste0("/public/", df$job_name[i], basename(df$jobFileName[i]))
+    write.csv(df_essn, file = fname, row.names = FALSE)
+    ## send a e-mail to df$user_email[i] to notify job completed
+ }
 }
 
-# another section for completed jobs?
-# move successful requested jobs to submitted file
-write.table(subset(df, completed == TRUE), 
-      file = "./jobs_completed.csv", append = TRUE)
-# and unsuccessful requested jobs to failed file
-write.csv(subset(df, completed == FALSE), 
-      file = "/jobs/jobs_failedToComplete.csv", append = TRUE)
+# update staus in data frame
+df$completed <- completedNow
+
+# write successfully submitted jobs to file
+write.csv(df, file = "./jobs_submitted.csv", row.names = FALSE)
+# or to preserve date formats etc
+save(df, file = "./jobs_submitted.RData")
+
 # and delete the original request file 
 # check cron job has permission to delete this file
-if(file.exists(file.remove(jobs_submitted))
-if(file.exists(file.remove(jobs_Notsubmitted)) ??
-## this is getting complicated !!!
+#file.remove(fname_requests)
+# or rename
+file.rename(fname_requests, paste0(fname_requests, ".processed"))
 
-  ##do things
-  do we know output file names?
-  concatenate output
-  move/copy to /public
-  plot, gap-fill, sum
+  ##other things
+  merge with met, plot, gap-fill, sum
