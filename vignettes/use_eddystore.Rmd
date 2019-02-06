@@ -25,7 +25,6 @@ shell.exec("use_eddystore.pdf")
 ```{r startup, eval=TRUE, echo=TRUE, include=TRUE}
 rm(list=ls(all=TRUE))
 library(eddystore)
-# library(readxl)
 # library(dplyr)
 # library(stringr)
 library(RCurl)
@@ -74,7 +73,8 @@ In this vignette, I demonstrate how to run Eddystore.
 ```{r convertProjectPath, eval=FALSE, echo=TRUE, include=TRUE}
 # convert file paths in project file to eddystore locations
 eddyproProjectPathName <- "/gws/nopw/j04/eddystore/stations/Balmoral/projects/Balmoral.eddypro"
-station_dir <- "/gws/nopw/j04/eddystore/stations/Balmoral"
+eddyproProjectPathName <- "/gws/nopw/j04/eddystore/stations/EasterBush/projects/EB_2013.eddypro"
+station_dir            <- "/gws/nopw/j04/eddystore/stations/EasterBush"
 convertProjectPath(eddyproProjectPathName, station_dir)
 ```
 <!--- } -->

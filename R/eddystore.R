@@ -79,6 +79,11 @@ convertProjectPath <- function(eddyproProjectPathName, station_dir){
     # write new text into this line
     eddyproProjectFileText[ind] <- paste0("data_path=", station_dir,  "/raw_files")      
     
+    # find line for recursion within raw data path
+    ind <- !is.na(str_match(eddyproProjectFileText, "recurse="))
+    # write new text into this line
+    eddyproProjectFileText[ind] <- "recurse=1"      
+    
     # write all lines to file
     print(paste0("Writing ", eddyproProjectPathName_new))
     writeLines(eddyproProjectFileText, con = eddyproProjectPathName_new)
@@ -228,7 +233,7 @@ adjustIntervals <- function(stationID_proc, procID_proc, intervals, fname_df_pro
 #' myJob <- adjustIntervals(stationID_proc, procID_proc, intervals, fname_df_project = fname_df_project)
 #' myJob <- writeProjectFiles(myJob)
 
-writeProjectFiles <- function(job){
+writeProjectFiles <- function(job, job_name = "eddytest"){
   # make a vector of file names
   nIntervals <- length(job$startDate)
   job$v_eddyproProjectFileName <- vector(mode = "character", length = nIntervals)
@@ -239,7 +244,7 @@ writeProjectFiles <- function(job){
   # make this the base project file name
   baseProjectFileName <- dir_name[1:(length(dir_name)-1)]
   baseProjectFileName <- str_c(baseProjectFileName, collapse = "/")
-  baseProjectFileName <- paste0(baseProjectFileName, "/tmp_prj/processing.eddypro")
+  baseProjectFileName <- paste0(baseProjectFileName, "/tmp_prj/", job_name, ".eddypro")
   
   # get the station dir name, 2 from the end (i.e. station/proc/processing.eddypro)
   # use as a check that this is same as sationID? Depends on just directory structure
@@ -256,12 +261,12 @@ writeProjectFiles <- function(job){
     
     # make .eddypro file name for interval 
     job$v_eddyproProjectFileName[i] <- paste0(str_sub(baseProjectFileName, start = 1, 
-      end = str_length(baseProjectFileName)-8), i, ".eddypro")
+      end = str_length(baseProjectFileName)-8), "_", i, ".eddypro")
     
     # find line where "project" ID is given
     ind <- !is.na(str_match(eddyproProjectFileText, "project_id="))
     # write new text into this line
-    eddyproProjectFileText[ind] <- paste0("project_id=job", i)
+    eddyproProjectFileText[ind] <- paste0("project_id=", job_name, "_job", i)
     
     # find line where flag for sub-period processing occurs
     ind <- !is.na(str_match(eddyproProjectFileText, "pr_subset="))
@@ -283,7 +288,8 @@ writeProjectFiles <- function(job){
     writeLines(eddyproProjectFileText, con = job$v_eddyproProjectFileName[i])
   }
 
-  job$baseProjectFileName <- baseProjectFileName       
+  job$job_name <- job_name  
+  job$baseProjectFileName <- baseProjectFileName 
   return(job)
 }
 
@@ -318,7 +324,7 @@ writeProjectFiles <- function(job){
 writeJobFile <- function(job, binpath = "/gws/nopw/j04/eddystore/eddypro-engine_6.2.0/eddypro-engine/bin/linux/eddypro_rp", 
                             switch_OS = "-s linux",
                             eddystore_path = "/gws/nopw/j04/eddystore", 
-                            job_name = "eddytest", user_email = "plevy@ceh.ac.uk"){
+                            user_email = "plevy@ceh.ac.uk"){
   # make a unique name for a bsub queue file
   job_writeTime <- str_replace_all(Sys.time(), c(" " = "_", ":" = "_", "GMT" = ""))
   jobFileName <- paste0(eddystore_path, "/jobs/", job$station_name, "_", job_writeTime, "_eddystoreJob.sh")
@@ -330,19 +336,19 @@ writeJobFile <- function(job, binpath = "/gws/nopw/j04/eddystore/eddypro-engine_
   write("#BSUB -o %J.out", file = jobFileName, append = TRUE)
   write("#BSUB -e %J.err", file = jobFileName, append = TRUE)
   #write("#BSUB -W 00:10", file = jobFileName, append = TRUE) # this sets an extra limit on wall time used if needed
-  write(paste0("#BSUB -J ", job_name, "[1-", job$nIntervals, "]"), file = jobFileName, append = TRUE)
+  write(paste0("#BSUB -J ", job$job_name, "[1-", job$nIntervals, "]"), file = jobFileName, append = TRUE)
 
   # assumes processing file is in a subdirectory of main station directory
   switch_env <- paste("-e", job$station_dir)
  
   # make job array of processing file names
   eddyproProcArray <- paste0(tools::file_path_sans_ext(job$baseProjectFileName), 
-        "${LSB_JOBINDEX}", ".eddypro")        
+        "_${LSB_JOBINDEX}", ".eddypro")        
   cmd <- paste(binpath, switch_OS, switch_env, eddyproProcArray)
   write(cmd, file = jobFileName, append = TRUE)
   on.exit(close(con))
   
-  job$jobFileName <- jobFileName; job$job_name <- job_name; job$user_email <- user_email
+  job$jobFileName <- jobFileName; job$user_email <- user_email
   return(job)
 }
 
@@ -381,8 +387,8 @@ createJob <- function(stationID_proc, procID_proc, startDate_period, endDate_per
     job_name = "eddytest", user_email = "plevy@ceh.ac.uk"){
   intervals <- makeDateIntervals(startDate_period, endDate_period, nProcessors)
   job <- adjustIntervals(stationID_proc, procID_proc, intervals, fname_df_project)
-  job <- writeProjectFiles(job)
-  job <- writeJobFile(job, binpath, switch_OS, eddystore_path, job_name, user_email)
+  job <- writeProjectFiles(job, job_name)
+  job <- writeJobFile(job, binpath, switch_OS, eddystore_path, user_email)
   return(job)
 }
 
@@ -419,13 +425,13 @@ runJob <- function(job){
   return(job)
 }
 
-#' Check Status of Job on LOTUS
+#' Check Status of Job on LOTUS - Check if Completed
 #'
 #' This function checks an eddypro processing job on LOTUS.
 #' For multi-processor jobs, it only checks the first-listed in the job array, 
 #' may report "DONE" before all are finished. 
 #' @param job An eddystore job object made with the createJob function
-#' @return job_status A character message: "RUN" if still running, "DONE" if finished.
+#' @return job_status Logical, TRUE if job_status == "DONE"
 #' @export
 
 checkJobCompleted <- function(job_name){
@@ -442,6 +448,50 @@ checkJobCompleted <- function(job_name){
   return(job_status == "DONE")
 }
 
+#' Check Status of Job on LOTUS - Check if Failed
+#'
+#' This function checks an eddypro processing job on LOTUS.
+#' For multi-processor jobs, it only checks the first-listed in the job array, 
+#' @param job_name An eddystore job_name specified by the job request
+#' @return job_status Logical, TRUE if job_status == "EXIT" i.e. failed
+#' @export
+
+checkJobFailed <- function(job_name){
+  cmd <- paste("bjobs -a -J", job_name)
+  # query the job queue to get the status of the job
+  bjobs_report <- system(cmd, intern = TRUE)
+  # split string on whitespace 
+  bjobs_report_ch <- str_split(bjobs_report[2], "\\s+")[[1]]
+    bjobs_report_ch
+  job_status <- bjobs_report_ch[3]
+  job_name   <- bjobs_report_ch[7]
+  job_SUBMIT_TIME <- str_c(bjobs_report_ch[8:10], collapse = " ")
+  print(paste("Job", job_name, "submitted at", job_SUBMIT_TIME, "is", job_status))  
+  return(job_status == "EXIT")
+}
+
+#' Check Status of Job on LOTUS - Check if Still Running
+#'
+#' This function checks an eddypro processing job on LOTUS.
+#' For multi-processor jobs, it only checks the first-listed in the job array, 
+#' @param job_name An eddystore job_name specified by the job request
+#' @return job_status Logical, TRUE if job_status == "RUN" i.e. still running
+#' @export
+
+checkJobRunning <- function(job_name){
+  cmd <- paste("bjobs -a -J", job_name)
+  # query the job queue to get the status of the job
+  bjobs_report <- system(cmd, intern = TRUE)
+  # split string on whitespace 
+  bjobs_report_ch <- str_split(bjobs_report[2], "\\s+")[[1]]
+    bjobs_report_ch
+  job_status <- bjobs_report_ch[3]
+  job_name   <- bjobs_report_ch[7]
+  job_SUBMIT_TIME <- str_c(bjobs_report_ch[8:10], collapse = " ")
+  print(paste("Job", job_name, "submitted at", job_SUBMIT_TIME, "is", job_status))  
+  return(job_status == "RUN")
+}
+
 # test function for PC, where bjobs doesnt work
 checkJobCompleted_Test <- function(job_name){
   cmd <- paste("bjobs -a -J", job_name)
@@ -449,14 +499,30 @@ checkJobCompleted_Test <- function(job_name){
   return(job_status == "DONE")
 }
 
-#' Collate essential output files
+#' Collate essential output files using job name
+#'
+#' @param job An eddystore job object made with the createJob function
+#' @return A data frame of the concatenated essential output files from each job.
+#' @export
+
+get_essential_output_df <- function(job_name, station_dir){
+  na.strings = c("NAN", "7999", "-7999","-999","999","9999.99", "-9999.0", "-9999.0000000000000","9999","9999","-9999")
+  to_match <- paste0("eddypro_", job_name, "_job.*_essentials_")
+  files_out <- list.files(path = paste0(station_dir, "/output"), pattern = to_match, full.names = TRUE)
+  df_essn <- do.call(rbind, lapply(files_out, FUN = read.csv, na.strings = na.strings, header = TRUE, stringsAsFactors = FALSE))
+  df_essn$TIMESTAMP <- paste(df_essn$date, df_essn$time)
+  df_essn <- within(df_essn, datect <- as.POSIXct(strptime(TIMESTAMP, "%Y-%m-%d %H:%M")))
+  return(df_essn)
+}
+
+#' Collate essential output files using time only
 #'
 #' Note that curently "EasterBush" is hard-coded in the path - need to pass path argument
 #' @param job An eddystore job object made with the createJob function
 #' @return A data frame of the concatenated essential output files from each job.
 #' @export
 
-get_essential_output_df <- function(job_startTime){
+get_essential_output_df_byTime <- function(job_startTime){
   na.strings = c("NAN", "7999", "-7999","-999","999","9999.99", "-9999.0", "-9999.0000000000000","9999","9999","-9999")
   job_time_ch <- str_split(job_startTime, "[-: ]")[[1]]
   YYYY <- job_time_ch[1]
