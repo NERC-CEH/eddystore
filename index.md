@@ -43,22 +43,17 @@ and help is available in the standard R manner:
     vignettes("eddystore")
 
 
-<!---
-- [Overview](pages/overview.html)
-- [Making an independent website](pages/independent_site.html)
-- [Making a personal site](pages/user_site.html)
-- [Making a site for a project](pages/project_site.html)
-- [Making a jekyll-free site](pages/nojekyll.html)
-- [Testing your site locally](pages/local_test.html)
+- [Accessing eddystore](pages/access.html)
+- [Uploading raw daw eddystore](pages/upload.html)
+- [Using eddystore via a web browswer](pages/shiny.html)
+- [Using eddystore via the command line](pages/jasmin.html)
+- [How it works](pages/details.html)
+- [Background](pages/background.html)
 - [Resources](pages/resources.html)
--->
 
-If anything here is confusing (or _wrong_!), or if I've missed
-important details, please
-[submit an issue](https://github.com/NERC-CEH/eddystore/issues), or (even
-better) fork [the GitHub repository for this website](https://github.com/NERC-CEH/eddystore),
-make modifications, and submit a pull request.
+If anything here is confusing, or if I've missed important details, please
+[submit an issue](https://github.com/NERC-CEH/eddystore/issues).
 
 ---
 
-The source for this site is based this [on github](https://github.com/kbroman/simple_site).
+The source for this site is based [this](https://github.com/kbroman/simple_site).
