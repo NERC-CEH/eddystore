@@ -1,50 +1,49 @@
 ---
 layout: page
 title: eddystore
-tagline: Storage and processing of eddy covariance data
+tagline: Storage and parallel processing of eddy covariance data
 description: Parallel processing of eddy covariance data on JASMIN
 ---
 
-[Github Pages](https://pages.github.com) provide a simple way to make a
-website using
-[Markdown](https://daringfireball.net/projects/markdown/) and
-[git](https://git-scm.com).
+[eddystore](https://github.com/NERC-CEH/eddystore) is a facility for the storage and processing of eddy covariance data for the NERC community.
+eddystore can automatically process uploaded data, allowing near-real-time flux calculation with automated raw-data uploads. Processing can be carried out in parallel to achieve fast calculation times for long time series. The system can be accessed via a web interface or via a Linux command-line interface.
 
-For me, the painful aspects of making a website are
+eddystore comprises several components:
 
-- Working with html and css
-- Finding a hosting site
-- Transferring stuff to the hosting site
+- the [JASMIN](http://www.jasmin.ac.uk/) storage and computation hardware
+- three pieces of software: 
+- the eddypro fortran program which performs the flux calculations
+- an R package "eddystore" which contains:
+  - functions which translate the user processing requirements into computation instructions on jasmin, and
+  - R scripts which carry these instructions out on a scheduled basis as cron jobs
+- a shiny app which allows jobs to be run on jasmin via a web browser
 
-With [GitHub Pages](https://pages.github.com), you just write things in
-[Markdown](https://daringfireball.net/projects/markdown/),
-[GitHub](https://github.com) hosts the site for you, and you just push
-material to your GitHub repository with `git add`, `git commit`, and
-`git push`.
+Processing jobs can be created manually via a [web browser](https://github.com/NERC-CEH/eddystore), or run automatically on a scheduled basis.
+The web interface allows a processing job to be submitted for a particular site and time period.
+Raw data can be uploaded via dropbox, or preferably directly to eddystore via SCP or rsync with a JASMIN account.
+Output data can be [downloaded](http://gws-access.ceda.ac.uk/public/eddystore/) via a web browser or with SCP.
 
-If you love [git](https://git-scm.com/) and
-[GitHub](https://github.com), you'll love
-[GitHub Pages](https://pages.github.com), too.
+In order to use eddystore via the web browser interface, you need to do the following:
+- [apply](https://www.ceh.ac.uk/) for eddystore access.
 
-The sites use [Jekyll](https://jekyllrb.com/), a
-[ruby](https://www.ruby-lang.org/en/) [gem](https://rubygems.org/), to
-convert Markdown files to html, and this part is done
-automatically when you push the materials to the `gh-pages` branch
-of a GitHub repository.
+In order to use eddystore with full flexibility from a Linux command-line interface, you need to do the following:
+- [apply](https://www.ceh.ac.uk/) for eddystore access, and also
+- [apply](https://accounts.jasmin.ac.uk/) for a JASMIN account, with access to the eddystore group workspace.
 
-The [GitHub](https://pages.github.com) and
-[Jekyll](https://jekyllrb.com) documentation is great, but I thought it
-would be useful to have a minimal tutorial, for those who just want to
-get going immediately with a simple site. To some readers, what GitHub
-has might be simpler and more direct.  But if you just want to create
-a site like the one you're looking at now, read on.
+In the latter case (via the Linux command-line interface), eddystore works as a set of functions within R.
+To install the eddystore R package from github, type the following at the R command prompt:
 
-Start by reading the [Overview page](pages/overview.html), which
-explains the basic structure of these sites. Then read
-[how to make an independent website](pages/independent_site.html). Then
-read any of the other things, such as
-[how to test your site locally](pages/local_test.html).
+    library(devtools)
+    install_github("NERC-CEH/eddystore", auth_token = "cf75f3ae2091f58e6dd664ce9031bee3aa98f0f8")
+    library(eddystore)
 
+and help is available in the standard R manner:
+
+    ?eddystore
+    vignettes("eddystore")
+
+
+<!---
 - [Overview](pages/overview.html)
 - [Making an independent website](pages/independent_site.html)
 - [Making a personal site](pages/user_site.html)
@@ -52,21 +51,14 @@ read any of the other things, such as
 - [Making a jekyll-free site](pages/nojekyll.html)
 - [Testing your site locally](pages/local_test.html)
 - [Resources](pages/resources.html)
+-->
 
 If anything here is confusing (or _wrong_!), or if I've missed
 important details, please
-[submit an issue](https://github.com/kbroman/simple_site/issues), or (even
-better) fork [the GitHub repository for this website](https://github.com/kbroman/simple_site),
+[submit an issue](https://github.com/NERC-CEH/eddystore/issues), or (even
+better) fork [the GitHub repository for this website](https://github.com/NERC-CEH/eddystore),
 make modifications, and submit a pull request.
 
 ---
 
-The source for this minimal tutorial is [on github](https://github.com/kbroman/simple_site).
-
-Also see my [tutorials](https://kbroman.org/pages/tutorials) on
-[git/github](https://kbroman.org/github_tutorial),
-[GNU make](https://kbroman.org/minimal_make),
-[knitr](https://kbroman.org/knitr_knutshell),
-[R packages](https://kbroman.org/pkg_primer),
-[data organization](https://kbroman.org/dataorg),
-and [reproducible research](https://kbroman.org/steps2rr).
+The source for this site is based this [on github](https://github.com/kbroman/simple_site).
