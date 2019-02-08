@@ -12,64 +12,47 @@ rm(list=ls(all=TRUE))
 #library(devtools)
 #install_github("NERC-CEH/eddystore", auth_token = "cf75f3ae2091f58e6dd664ce9031bee3aa98f0f8")
 library(eddystore)
+library(rdrop2)
 
-# eddystore automates the processing of eddy covariance flux data using eddypro in parallel
-#
-# eddystore comprises the JASMIN storage and computation hardware
-# and three pieces of software: 
-# 1. the eddypro fortran program which performs the flux calculations
-# 2. an R package "eddystore" which contains:
-     # functions which translate the user processing requirements into computation instructions on jasmin, and
-     # R scripts which carry these instructions out on a scheduled basis as cron jobs
-# 3. a shiny app which allows jobs to be run on jasmin via a web browser
-# Processing jobs can be created manually with a shiny app, or automatically on a scheduled basis.
-# The shiny app saves a job request file to dropbox, which is copied by a cron job on jasmin.
-# For scheduled jobs, another cron job adds job requests to the file at fixed intervals (daily).
-# 
-# There are two cron jobs:
-# 1. scheduleJobs.R - writes scheduled job requests to df_job_requests.csv every day
-# 2. doRequestedJobs.R - create and submit jobs, and handle output
-#    Specific tasks are:
-# 1. create and run the requested jobs
-#      read df_job_requests.csv
-#      create and run jobs
-#      if submittedOK
-#      add to df_jobs with rbind.fill with status vars completedOK, processedOK, ...
-# 2. detect when these have finished running, concatenate output and move to /public
-#      for jobs in df_jobs 
-#       completedOK == FALSE & concatenatedOK == FALSE  = still running, no action
-#       completedOK == TRUE  & concatenatedOK == FALSE  = needs concatenating
-#       completedOK == TRUE  & concatenatedOK == TRUE   = already concatenated, no action
-#     add another task for processing further (met data, gap-filling, sums, plots) here?
+# check for manually requested jobs produced by shiny app on dropbox
+# Providing a previous token stored in a file
+#drop_auth(rdstoken = "N:/0Peter/curr/ECsystem/eddystore/scripts/droptoken.rds")
+drop_auth(rdstoken = "/gws/nopw/j04/eddystore/scripts/droptoken.rds")
+new_manual_jobs <- drop_exists("eddystore_jobs/df_job_requests.csv")
+if (new_manual_jobs){
+  df_manual_jobs <- drop_read_csv("eddystore_jobs/df_job_requests.csv", stringsAsFactors = FALSE)
+  drop_move("eddystore_jobs/df_job_requests.csv", "eddystore_jobs/df_job_requests_submitted.csv")
+}
 
-# read previously submitted jobs
-# we add requested jobs to this after they have been successfully submitted
-#df_submitted <- read.csv(file = "./jobs_submitted.csv", stringsAsFactors = FALSE)
-load(file = "/gws/nopw/j04/eddystore/jobs/jobs_submitted.RData", verbose = TRUE)
-
-# read job request file produced by shiny app
+# check for automated requested jobs on jasmin
 #fname_requests <- "N:/0Peter/curr/ECsystem/eddystore/jobs/job_requests/df_job_requests.csv"
 fname_requests <- "/gws/nopw/j04/eddystore/jobs/job_requests/df_job_requests.csv"
-if (file.exists(fname_requests)){
-  df <- read.csv(fname_requests, stringsAsFactors = FALSE)
-} else {
-  df <- NULL
+new_auto_jobs   <- file.exists(fname_requests)
+if (new_auto_jobs){
+  df_auto_jobs <- read.csv(fname_requests, stringsAsFactors = FALSE)
+  # and rename the original request file 
+  file.rename(fname_requests, paste0(fname_requests, ".processed"))
 }
-if ((length(df[,1]) > 0)){ # file existscontains some data
+
+# if there are job requests to process ...
+if (new_auto_jobs | new_manual_jobs){
+  # if both auto and manual job requests, combine both
+  if (new_auto_jobs & new_manual_jobs)  df <- rbind(df_auto_jobs, df_manual_jobs)
+  # if auto but no manual job requests
+  if (new_auto_jobs & !new_manual_jobs) df <- df_auto_jobs
+  # if no auto but manual job requests
+  if (!new_auto_jobs & new_manual_jobs) df <- df_manual_jobs
+
   df$startDate <- as.POSIXct(strptime(df$startDate, "%d/%m/%Y %H:%M"), tz = "UTC")
   df$endDate   <- as.POSIXct(strptime(df$endDate, "%d/%m/%Y %H:%M"), tz = "UTC")
   n_jobs <- dim(df)[1]
-  summary(df)
-  ## do we need these, or inherited from checkJobStatus function
+  #summary(df)
   df$submitted <- vector(mode = "logical", length = n_jobs)
   df$completed <- vector(mode = "logical", length = n_jobs)
   # declare a list to hold job objects
   l_jobs       <- vector(mode = "list",    length = n_jobs) # declare a list for job objects
+
   # add a check? if stationID is in df_projects
-
-
-  # check pending jobs in same script?
-  # if so, only do following if n_jobs > 0
   # read data frame of eddypro project files
   #fname_projects <- "N:/0Peter/curr/ECsystem/eddystore/df_eddystore_projects.csv"
   fname_projects <- "/gws/nopw/j04/eddystore/eddystore_projects/df_eddystore_projects.csv"
@@ -108,7 +91,7 @@ if ((length(df[,1]) > 0)){ # file existscontains some data
     # report progress to files in public folder
     con <- file(paste0("/gws/nopw/j04/eddystore/public/", df$job_name[i], "_report.txt"))
     if (l_jobs[[i]]$err == 0){ # job submission worked
-    df$submitted[i] <- TRUE
+      df$submitted[i] <- TRUE
       txt <- paste("Job", l_jobs[[i]]$job_name, "was submitted successfully at", l_jobs[[i]]$job_startTime)
     } else { # it didnt
       txt <- paste("Job", l_jobs[[i]]$job_name, "had an error when submitted at", l_jobs[[i]]$job_startTime)
@@ -134,17 +117,23 @@ if ((length(df[,1]) > 0)){ # file existscontains some data
   # and remove them
   df <- subset(df, submitted == TRUE)
 
-  # add requested jobs to those previously submitted
-  df <- rbind(df_submitted, df)
-  dim(df_submitted)
-  dim(df)
+  # read previously submitted jobs
+  # we add requested jobs to this now they have been successfully submitted
+  #df_submitted <- read.csv(file = "./jobs_submitted.csv", stringsAsFactors = FALSE)
+  #load(file = "N:/0Peter/curr/ECsystem/eddystore/eddystore/jobs/jobs_submitted.RData", verbose = TRUE)
+  load(file = "/gws/nopw/j04/eddystore/jobs/jobs_submitted.RData", verbose = TRUE)
+
+  df_submitted <- rbind(df_submitted, df)
+  # dim(df_submitted)
+  # dim(df)
   # write successfully submitted jobs to file
-  df_submitted <- df
   save(df_submitted, file = "/gws/nopw/j04/eddystore/jobs/jobs_submitted.RData")
-} # end of code for if job requests exist in file
+}# end of code for if job requests exist in file
+####################################################
+
 
 # this could be a separate cron job
-# reload submitted jobs form file
+# reload submitted jobs from file
 load(file = "/gws/nopw/j04/eddystore/jobs/jobs_submitted.RData", verbose = TRUE)
 df <- df_submitted
 # for each submitted job, check if now completed
@@ -160,7 +149,7 @@ for (i in 1:length(df[,1])){
     txt <- paste("Job", df$job_name[i], "was completed successfully.")
     writeLines(txt, con)
     close(con)
-    # concatenate output and move to /public
+    # concatenate output and write to /public
     #str(df_essn)
     df_essn <- get_essential_output_df(df$job_name[i], df$station_dir[i])
     fname <- paste0("/gws/nopw/j04/eddystore/public/", df$job_name[i], "_essentials.csv")
@@ -169,15 +158,9 @@ for (i in 1:length(df[,1])){
  }
 }
 
-# write successfully submitted jobs to file
+# write submitted jobs to file with updated completion status
 df_submitted <- df
 save(df_submitted, file = "/gws/nopw/j04/eddystore/jobs/jobs_submitted.RData")
 
-# and delete the original request file 
-# check cron job has permission to delete this file
-#file.remove(fname_requests)
-# or rename
-if (file.exists(fname_requests)) file.rename(fname_requests, paste0(fname_requests, ".processed"))
-
-  ##other things
-  #merge with met, plot, gap-fill, sum
+##other thingsz
+#merge with met, plot, gap-fill, sum

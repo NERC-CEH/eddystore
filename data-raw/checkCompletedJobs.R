@@ -39,18 +39,9 @@ for (i in 1:length(df[,1])){
  }
 }
 
-# update status in data frame
-df$completed <- completedNow
-
 # write successfully submitted jobs to file
 df_submitted <- df
 save(df_submitted, file = "/gws/nopw/j04/eddystore/jobs/jobs_submitted.RData")
-
-# and delete the original request file 
-# check cron job has permission to delete this file
-#file.remove(fname_requests)
-# or rename
-file.rename(fname_requests, paste0(fname_requests, ".processed"))
 
   ##other things
   #merge with met, plot, gap-fill, sum
