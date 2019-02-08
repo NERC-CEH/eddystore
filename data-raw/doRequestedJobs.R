@@ -21,7 +21,8 @@ drop_auth(rdstoken = "/gws/nopw/j04/eddystore/scripts/droptoken.rds")
 new_manual_jobs <- drop_exists("eddystore_jobs/df_job_requests.csv")
 if (new_manual_jobs){
   df_manual_jobs <- drop_read_csv("eddystore_jobs/df_job_requests.csv", stringsAsFactors = FALSE)
-  drop_move("eddystore_jobs/df_job_requests.csv", "eddystore_jobs/df_job_requests_submitted.csv")
+  drop_move("eddystore_jobs/df_job_requests.csv", "eddystore_jobs/df_job_requests_submitted.csv", verbose = FALSE)
+  drop_delete("eddystore_jobs/df_job_requests.csv", verbose = FALSE)
 }
 
 # check for automated requested jobs on jasmin
@@ -46,6 +47,7 @@ if (new_auto_jobs | new_manual_jobs){
   df$startDate <- as.POSIXct(strptime(df$startDate, "%d/%m/%Y %H:%M"), tz = "UTC")
   df$endDate   <- as.POSIXct(strptime(df$endDate, "%d/%m/%Y %H:%M"), tz = "UTC")
   n_jobs <- dim(df)[1]
+  print(paste("There are", n_jobs, "new jobs to submit."))
   #summary(df)
   df$submitted <- vector(mode = "logical", length = n_jobs)
   df$completed <- vector(mode = "logical", length = n_jobs)
@@ -64,7 +66,7 @@ if (new_auto_jobs | new_manual_jobs){
 
   # for each requested job
   for (i in 1:n_jobs){
-    #i = 2
+    #i = 1
     ## pass eddystore path as an argument so we can run on PC more easily?
     l_jobs[[i]] <- createJob(
                     stationID_proc = df$stationID[i], 
@@ -128,7 +130,7 @@ if (new_auto_jobs | new_manual_jobs){
   # dim(df)
   # write successfully submitted jobs to file
   save(df_submitted, file = "/gws/nopw/j04/eddystore/jobs/jobs_submitted.RData")
-}# end of code for if job requests exist in file
+} # end of code for if job requests exist in file
 ####################################################
 
 
