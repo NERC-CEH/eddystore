@@ -29,8 +29,7 @@ myJob <- adjustIntervals(stationID_proc, procID_proc, intervals, fname_df_projec
 myJob <- writeProjectFiles(myJob)
 myJob <- writeJobFile(myJob, binpath = "N:/0Peter/curr/ECsystem/eddypro", 
                              switch_OS = "-s linux",
-                             eddystore_path = "N:/0Peter/curr/ECsystem/eddystore",
-                             job_name = "runJob_example")
+                             eddystore_path = "N:/0Peter/curr/ECsystem/eddystore")
 myJob <- runJob(myJob)
 }
 \seealso{

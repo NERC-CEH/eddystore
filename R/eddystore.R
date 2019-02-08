@@ -217,6 +217,7 @@ adjustIntervals <- function(stationID_proc, procID_proc, intervals, fname_df_pro
 #'
 #' This function writes an eddypro project file for each of the intervals specified.
 #' @param job A list of the start and end times of each interval, created by makeDateIntervals.
+#' @param job_name The job name identifier given in df_job_requests.
 #' @return An eddystore job object.
 #' @export
 #' @seealso \code{\link{adjustIntervals}} for the adjusting this to match boundaries between processing files.
@@ -300,7 +301,6 @@ writeProjectFiles <- function(job, job_name = "eddytest"){
 #' @param binpath Path to the eddy_rp raw data processing binary file.
 #' @param switch_OS Switch betweeen linux and windows versions.
 #' @param eddystore_path The path to eddystore.
-#' @param job_name The job name identifier given in df_job_requests.
 #' @param user_email E-mail address to send notifications to.
 #' @return An eddystore job object.
 #' @export
@@ -319,7 +319,7 @@ writeProjectFiles <- function(job, job_name = "eddytest"){
 #' myJob <- writeProjectFiles(myJob)
 #' myJob <- writeJobFile(myJob, binpath = "N:/0Peter/curr/ECsystem/eddypro", 
 #'                              switch_OS = "-s linux",
-#'                              eddystore_path = "N:/0Peter/curr/ECsystem/eddystore", job_name = "writeJob_example")
+#'                              eddystore_path = "N:/0Peter/curr/ECsystem/eddystore")
 
 writeJobFile <- function(job, binpath = "/gws/nopw/j04/eddystore/eddypro-engine_6.2.0/eddypro-engine/bin/linux/eddypro_rp", 
                             switch_OS = "-s linux",
@@ -414,8 +414,7 @@ createJob <- function(stationID_proc, procID_proc, startDate_period, endDate_per
 #' myJob <- writeProjectFiles(myJob)
 #' myJob <- writeJobFile(myJob, binpath = "N:/0Peter/curr/ECsystem/eddypro", 
 #'                              switch_OS = "-s linux",
-#'                              eddystore_path = "N:/0Peter/curr/ECsystem/eddystore",
-#'                              job_name = "runJob_example")
+#'                              eddystore_path = "N:/0Peter/curr/ECsystem/eddystore")
 #' myJob <- runJob(myJob)
 
 runJob <- function(job){
@@ -430,7 +429,7 @@ runJob <- function(job){
 #' This function checks an eddypro processing job on LOTUS.
 #' For multi-processor jobs, it only checks the first-listed in the job array, 
 #' may report "DONE" before all are finished. 
-#' @param job An eddystore job object made with the createJob function
+#' @param job_name The job name identifier given in df_job_requests.
 #' @return job_status Logical, TRUE if job_status == "DONE"
 #' @export
 
@@ -501,7 +500,8 @@ checkJobCompleted_Test <- function(job_name){
 
 #' Collate essential output files using job name
 #'
-#' @param job An eddystore job object made with the createJob function
+#' @param job_name The job name identifier given in df_job_requests.
+#' @param station_dir The path to the station directory on eddystore.
 #' @return A data frame of the concatenated essential output files from each job.
 #' @export
 
@@ -518,7 +518,7 @@ get_essential_output_df <- function(job_name, station_dir){
 #' Collate essential output files using time only
 #'
 #' Note that curently "EasterBush" is hard-coded in the path - need to pass path argument
-#' @param job An eddystore job object made with the createJob function
+#' @param job_startTime Start time of the eddystore job made with the runJob function
 #' @return A data frame of the concatenated essential output files from each job.
 #' @export
 

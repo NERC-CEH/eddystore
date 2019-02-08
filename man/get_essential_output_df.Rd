@@ -2,16 +2,18 @@
 % Please edit documentation in R/eddystore.R
 \name{get_essential_output_df}
 \alias{get_essential_output_df}
-\title{Collate essential output files}
+\title{Collate essential output files using job name}
 \usage{
-get_essential_output_df(job)
+get_essential_output_df(job_name, station_dir)
 }
 \arguments{
-\item{job}{An eddystore job object made with the createJob function}
+\item{job_name}{The job name identifier given in df_job_requests.}
+
+\item{station_dir}{The path to the station directory on eddystore.}
 }
 \value{
 A data frame of the concatenated essential output files from each job.
 }
 \description{
-Note that curently "EasterBush" is hard-coded in the path - need to pass path argument
+Collate essential output files using job name
 }

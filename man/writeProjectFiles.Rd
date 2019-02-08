@@ -4,10 +4,12 @@
 \alias{writeProjectFiles}
 \title{Write Eddypro Project files for all intervals}
 \usage{
-writeProjectFiles(job)
+writeProjectFiles(job, job_name = "eddytest")
 }
 \arguments{
 \item{job}{A list of the start and end times of each interval, created by makeDateIntervals.}
+
+\item{job_name}{The job name identifier given in df_job_requests.}
 }
 \value{
 An eddystore job object.

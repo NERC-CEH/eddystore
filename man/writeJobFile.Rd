@@ -7,7 +7,7 @@
 writeJobFile(job,
   binpath = "/gws/nopw/j04/eddystore/eddypro-engine_6.2.0/eddypro-engine/bin/linux/eddypro_rp",
   switch_OS = "-s linux", eddystore_path = "/gws/nopw/j04/eddystore",
-  job_name = "eddytest", user_email = "plevy@ceh.ac.uk")
+  user_email = "plevy@ceh.ac.uk")
 }
 \arguments{
 \item{job}{An eddystore job object made with the writeProjectFiles function.}
@@ -17,8 +17,6 @@ writeJobFile(job,
 \item{switch_OS}{Switch betweeen linux and windows versions.}
 
 \item{eddystore_path}{The path to eddystore.}
-
-\item{job_name}{The job name identifier given in df_job_requests.}
 
 \item{user_email}{E-mail address to send notifications to.}
 }
@@ -42,7 +40,7 @@ myJob <- adjustIntervals(stationID_proc, procID_proc, intervals, fname_df_projec
 myJob <- writeProjectFiles(myJob)
 myJob <- writeJobFile(myJob, binpath = "N:/0Peter/curr/ECsystem/eddypro", 
                              switch_OS = "-s linux",
-                             eddystore_path = "N:/0Peter/curr/ECsystem/eddystore", job_name = "writeJob_example")
+                             eddystore_path = "N:/0Peter/curr/ECsystem/eddystore")
 }
 \seealso{
 \code{\link{adjustIntervals}} for the adjusting this to match boundaries between processing files.

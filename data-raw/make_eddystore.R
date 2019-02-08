@@ -5,8 +5,8 @@ library(devtools)
 library(roxygen2)
 
 getwd()
-#setwd("..")
-setwd("./eddystore")
+setwd("..")
+#setwd("./eddystore")
 system.time(check())
 
 # removed frm Depends

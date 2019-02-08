@@ -10,23 +10,26 @@
 ## ----startup, eval=TRUE, echo=TRUE, include=TRUE-------------------------
 rm(list=ls(all=TRUE))
 library(eddystore)
-# library(readxl)
 # library(dplyr)
 # library(stringr)
 library(RCurl)
-library(foreign)
+#library(foreign)
 
 # eddypro project data on github
-url <- "https://raw.githubusercontent.com/NERC-CEH/eddystore_procdata/master/eddystore_proc_table.csv"
-tmp_txt <- getURL(url)                
-df_project <- read.csv(textConnection(tmp_txt))
+#switch to cvs here - don't need readxl, and plain text for version control
+url <- "https://raw.githubusercontent.com/NERC-CEH/eddystore_projects/master/df_eddystore_projects.csv"
+tmp_txt <- RCurl::getURL(url)                
+df_project <- read.csv(textConnection(tmp_txt), stringsAsFactors = FALSE)
 
-# eedypro project data on local disk
-df_project <- read_excel("C:/Users/plevy/Documents/eddystore/data-raw/eddystore_proc_table.xlsx")
+# eddypro project data on local disk
+#df_project <- read_excel("C:/Users/plevy/Documents/eddystore/data-raw/eddystore_proc_table.xlsx")
 str(df_project)
+df_project$startDate <- as.POSIXct(strptime(df_project$startDate, "%d/%m/%Y %H:%M"), tz = "UTC")
+df_project$endDate   <- as.POSIXct(strptime(df_project$endDate, "%d/%m/%Y %H:%M"), tz = "UTC")
+df_project$endDate
 
 getwd()
-#setwd("./eddystore/data-raw/")
+#setwd("./eddystore/vignettes/")
 
 # ?eddystore
 # ?makeDateIntervals
@@ -44,6 +47,16 @@ getwd()
 # plot(n_cpu, time_taken)
 
 
+
+## ----convertProjectPath, eval=FALSE, echo=TRUE, include=TRUE-------------
+#  # convert file paths in project file to eddystore locations
+#  eddyproProjectPathName <- "/gws/nopw/j04/eddystore/stations/Balmoral/projects/Balmoral.eddypro"
+#  eddyproProjectPathName <- "/gws/nopw/j04/eddystore/stations/EasterBush/projects/EB_2013.eddypro"
+#  station_dir            <- "/gws/nopw/j04/eddystore/stations/EasterBush"
+#  convertProjectPath(eddyproProjectPathName, station_dir)
+
+## ----make_job_request, eval=FALSE, echo=TRUE, include=TRUE---------------
+#  
 
 ## ----run_example, eval=FALSE, echo=TRUE, include=TRUE--------------------
 #  # how many intervals to split processing run into
@@ -67,9 +80,39 @@ getwd()
 #  myJob
 #  
 #  myJob <- writeProjectFiles(myJob)
-#  myJob <- writeJobFile(myJob)
+#  myJob
+#  
+#  myJob <- writeJobFile(myJob, binpath = "N:/0Peter/curr/ECsystem/eddypro",
+#                              switch_OS = "-s linux",
+#                              eddystore_path = "N:/0Peter/curr/ECsystem/eddystore")
+#  myJob
+#  as.data.frame(myJob)
+#  View(as.data.frame(myJob))
+#  # all in a oner
+#  nProcessors <- 4
+#  # how many intervals to split processing run into
+#  nIntervals = 4
+#  # station for processing run
+#  stationID_proc <- "Balmoral"
+#  # processing configuration for processing run
+#  procID_proc <- "CO2_H2O"
+#  # start/end dates for processing run
+#  startDate_period <- "2018-07-03 00:00"
+#  endDate_period   <- "2019-01-31 23:30"
+#  startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
+#  endDate_period   <- as.POSIXct(strptime(endDate_period,   "%Y-%m-%d %H:%M"), tz = "UTC")
+#  startDate_period; endDate_period
+#  difftime(endDate_period, startDate_period, units = "days")
+#  
+#  myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors)
+#  
+#  # test at command line running outwith queue
+#  #/gws/nopw/j04/eddystore/eddypro-engine_6.2.0/eddypro-engine/bin/linux/eddypro_rp -s linux -e /gws/nopw/j04/eddystore/stations/EasterBush /gws/nopw/j04/eddystore/stations/EasterBush/projects/processing2.eddypro
+#  
 #  myJob <- runJob(myJob)
 #  myJob$err
+#  
+#  # use bjobs at the command line to monitor progress
 #  
 #  df_essn <- get_essential_output_df(myJob$job_startTime)
 #  dim(df_essn)
