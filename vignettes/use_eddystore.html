@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Peter Levy" />
+
+<meta name="date" content="2019-02-11" />
+
+<title>Eddystore: A brief user guide for parallel processing of eddy covariance data on JASMIN</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' || rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<link href="data:text/css;charset=utf-8,body%20%7B%0Abackground%2Dcolor%3A%20%23fff%3B%0Amargin%3A%201em%20auto%3B%0Amax%2Dwidth%3A%20700px%3B%0Aoverflow%3A%20visible%3B%0Apadding%2Dleft%3A%202em%3B%0Apadding%2Dright%3A%202em%3B%0Afont%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Afont%2Dsize%3A%2014px%3B%0Aline%2Dheight%3A%201%2E35%3B%0A%7D%0A%23header%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0A%23TOC%20%7B%0Aclear%3A%20both%3B%0Amargin%3A%200%200%2010px%2010px%3B%0Apadding%3A%204px%3B%0Awidth%3A%20400px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Aborder%2Dradius%3A%205px%3B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Afont%2Dsize%3A%2013px%3B%0Aline%2Dheight%3A%201%2E3%3B%0A%7D%0A%23TOC%20%2Etoctitle%20%7B%0Afont%2Dweight%3A%20bold%3B%0Afont%2Dsize%3A%2015px%3B%0Amargin%2Dleft%3A%205px%3B%0A%7D%0A%23TOC%20ul%20%7B%0Apadding%2Dleft%3A%2040px%3B%0Amargin%2Dleft%3A%20%2D1%2E5em%3B%0Amargin%2Dtop%3A%205px%3B%0Amargin%2Dbottom%3A%205px%3B%0A%7D%0A%23TOC%20ul%20ul%20%7B%0Amargin%2Dleft%3A%20%2D2em%3B%0A%7D%0A%23TOC%20li%20%7B%0Aline%2Dheight%3A%2016px%3B%0A%7D%0Atable%20%7B%0Amargin%3A%201em%20auto%3B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dcolor%3A%20%23DDDDDD%3B%0Aborder%2Dstyle%3A%20outset%3B%0Aborder%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0Aborder%2Dwidth%3A%202px%3B%0Apadding%3A%205px%3B%0Aborder%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dstyle%3A%20inset%3B%0Aline%2Dheight%3A%2018px%3B%0Apadding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0Aborder%2Dleft%2Dstyle%3A%20none%3B%0Aborder%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Ap%20%7B%0Amargin%3A%200%2E5em%200%3B%0A%7D%0Ablockquote%20%7B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Apadding%3A%200%2E25em%200%2E75em%3B%0A%7D%0Ahr%20%7B%0Aborder%2Dstyle%3A%20solid%3B%0Aborder%3A%20none%3B%0Aborder%2Dtop%3A%201px%20solid%20%23777%3B%0Amargin%3A%2028px%200%3B%0A%7D%0Adl%20%7B%0Amargin%2Dleft%3A%200%3B%0A%7D%0Adl%20dd%20%7B%0Amargin%2Dbottom%3A%2013px%3B%0Amargin%2Dleft%3A%2013px%3B%0A%7D%0Adl%20dt%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Aul%20%7B%0Amargin%2Dtop%3A%200%3B%0A%7D%0Aul%20li%20%7B%0Alist%2Dstyle%3A%20circle%20outside%3B%0A%7D%0Aul%20ul%20%7B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Apre%2C%20code%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0Aborder%2Dradius%3A%203px%3B%0Acolor%3A%20%23333%3B%0Awhite%2Dspace%3A%20pre%2Dwrap%3B%20%0A%7D%0Apre%20%7B%0Aborder%2Dradius%3A%203px%3B%0Amargin%3A%205px%200px%2010px%200px%3B%0Apadding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Acode%20%7B%0Afont%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0Afont%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0Apadding%3A%202px%200px%3B%0A%7D%0Adiv%2Efigure%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0Abackground%2Dcolor%3A%20%23FFFFFF%3B%0Apadding%3A%202px%3B%0Aborder%3A%201px%20solid%20%23DDDDDD%3B%0Aborder%2Dradius%3A%203px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Amargin%3A%200%205px%3B%0A%7D%0Ah1%20%7B%0Amargin%2Dtop%3A%200%3B%0Afont%2Dsize%3A%2035px%3B%0Aline%2Dheight%3A%2040px%3B%0A%7D%0Ah2%20%7B%0Aborder%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Apadding%2Dbottom%3A%202px%3B%0Afont%2Dsize%3A%20145%25%3B%0A%7D%0Ah3%20%7B%0Aborder%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Afont%2Dsize%3A%20120%25%3B%0A%7D%0Ah4%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0Amargin%2Dleft%3A%208px%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Ah5%2C%20h6%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23ccc%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Aa%20%7B%0Acolor%3A%20%230033dd%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Aa%3Ahover%20%7B%0Acolor%3A%20%236666ff%3B%20%7D%0Aa%3Avisited%20%7B%0Acolor%3A%20%23800080%3B%20%7D%0Aa%3Avisited%3Ahover%20%7B%0Acolor%3A%20%23BB00BB%3B%20%7D%0Aa%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0Aa%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%20code%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%0A" rel="stylesheet" type="text/css" />
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Eddystore: A brief user guide for parallel processing of eddy covariance data on JASMIN</h1>
+<h4 class="author"><em>Peter Levy</em></h4>
+<h4 class="date"><em>2019-02-11</em></h4>
+
+
+
+<!--- { rendering -->
+<!--- } -->
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>Eddystore is a system for parallel processing of eddy covariance data on JASMIN. In this document, I demonstrate how to run it.</p>
+</div>
+<div id="manually-setting-up-processing-jobs-using-eddystore-on-jasmin" class="section level1">
+<h1>Manually setting up processing jobs using <code>eddystore</code> on JASMIN</h1>
+<div id="log-in" class="section level2">
+<h2>Log in</h2>
+<p>See the general JASMIN <a href="https://help.jasmin.ac.uk/category/158-getting-started">help pages</a> for how to set up connections and get started. When you have an account, connect to the JASMIN login server using ssh (ssh, PuTTY or MobaXterm etc.). From a windows PC, you will need Pageant running with a private key loaded.</p>
+<!--- { login -->
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">ssh</span> -A -X jasmin-login1.ceda.ac.uk
+<span class="fu">ssh</span> -A -X jasmin-sci5.ceda.ac.uk</code></pre></div>
+<!--- } -->
+<p>Change to the eddystore workspace directory and run R with:</p>
+<!--- { cd -->
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="bu">cd</span> /gws/nopw/j04/eddystore
+<span class="ex">R</span></code></pre></div>
+<!--- } -->
+</div>
+<div id="install" class="section level2">
+<h2>Install</h2>
+<p>On the first time of use, the eddystore R package will need to be installed within R from github with the following lines:</p>
+<!--- { install -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(devtools)
+<span class="kw">install_github</span>(<span class="st">&quot;NERC-CEH/eddystore&quot;</span>, <span class="dt">auth_token =</span> <span class="st">&quot;cf75f3ae2091f58e6dd664ce9031bee3aa98f0f8&quot;</span>)
+<span class="kw">library</span>(eddystore)</code></pre></div>
+<!--- } -->
+<p>Thereafter, we need only load the package with</p>
+<!--- { startup -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(eddystore)</code></pre></div>
+<!--- } -->
+<p>and help is available in the standard manner in R:</p>
+<!--- { help -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># for the index</span>
+?eddystore
+<span class="co"># and e.g.</span>
+?createJob</code></pre></div>
+<!--- } -->
+</div>
+<div id="directory-structure" class="section level2">
+<h2>Directory structure</h2>
+<p>Data is organised by <strong>station</strong>, a single eddy covariance system measuring a fixed set of gases at a site. There could be multiple stations at a single <strong>site</strong> (inter-comparison campaigns, multiple intrument setups on the same mast etc.) The configuration of a station may change over time, so may require multiple eddypro <strong>project</strong> files (.eddypro) over time. Stations must have a unique name, and sit within the stations directory in the eddystore home stations. Data is organised with a fixed structure within each station directory For example, the <em>Balmoral</em> station would have the following sub-directories:</p>
+<!--- { paths -->
+<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"> <span class="co"># biomet data, if using these</span>
+<span class="ex">/gws/nopw/j04/eddystore/stations/Balmoral/biomet</span>
+ <span class="co"># .metadata file</span>
+<span class="ex">/gws/nopw/j04/eddystore/stations/Balmoral/metadata</span>  
+ <span class="co"># output files</span>
+<span class="ex">/gws/nopw/j04/eddystore/stations/Balmoral/output</span>  
+ <span class="co"># .eddypro project files</span>
+<span class="ex">/gws/nopw/j04/eddystore/stations/Balmoral/projects</span>  
+ <span class="co"># raw high frequency time series files (e.g. 10 Hz sonic and IRGA data)</span>
+<span class="ex">/gws/nopw/j04/eddystore/stations/Balmoral/raw_files</span>
+ <span class="co"># and these should be subdivided at least by year e.g.</span>
+<span class="ex">/gws/nopw/j04/eddystore/stations/Balmoral/raw_files/2018</span>
+<span class="ex">/gws/nopw/j04/eddystore/stations/Balmoral/raw_files/2019</span></code></pre></div>
+<!--- } -->
+<p>The raw data needs to be uploaded by SCP or rsync, and this is the time consuming step if there are GB of data. Project files (.eddypro), metadata, and biomet data (if this is used) needs to be uploaded to the corresponding sub-directories.</p>
+</div>
+<div id="changing-file-paths" class="section level2">
+<h2>Changing file paths</h2>
+<p>Assuming an .eddypro project file was created on a Windows version of eddypro, the file paths referred to within the file need to be updated to refer to the correct paths on JASMIN. To do this, we can use the <code>convertProjectPath</code> function in <code>eddystore</code>, giving the name of the file to be corrected and the pathname of the station directory.</p>
+<!--- { convertProjectPath -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># convert file paths in project file to eddystore locations</span>
+eddyproProjectPathName &lt;-<span class="st"> &quot;/gws/nopw/j04/eddystore/stations/Balmoral/projects/Balmoral.eddypro&quot;</span>
+station_dir            &lt;-<span class="st"> &quot;/gws/nopw/j04/eddystore/stations/Balmoral&quot;</span>
+<span class="kw">convertProjectPath</span>(eddyproProjectPathName, station_dir)</code></pre></div>
+<!--- } -->
+<p><code>eddyproProjectPathName</code> will have its paths updated, and a back-up copy of the original file written to <code>projects/tmp_prj/Balmoral.eddypro</code>.</p>
+</div>
+<div id="check-edit-the-project-file-table" class="section level2">
+<h2>Check / edit the project file table</h2>
+<p>The file <code>/gws/nopw/j04/eddystore/eddystore_projects/df_eddystore_projects.csv</code> contains the information describing which project files apply at which stations over which time periods. This allows eddystore to break a long time period down into sub-intervals for parallel processing, using the correct project file for each interval. If there is only one project file for a station, then this is trivially simple.</p>
+<p>The <a href="https://raw.githubusercontent.com/NERC-CEH/eddystore_projects/master/df_eddystore_projects.csv">project file table</a> is in a <a href="https://github.com/NERC-CEH/eddystore_projects">github repository</a>. For now, we can edit the file on JASMIN directly so it correctly specifies the appropriate project file(s) for the raw data to be processed. As an example for the Balmoral station:</p>
+<!--- { make_table -->
+<table>
+<thead>
+<tr class="header">
+<th align="left">siteID</th>
+<th align="left">stationID</th>
+<th align="left">procID</th>
+<th align="left">startDate</th>
+<th align="left">endDate</th>
+<th align="left">project_filepath</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Balmoral</td>
+<td align="left">Balmoral</td>
+<td align="left">CO2_H2O</td>
+<td align="left">03/07/2018 00:00</td>
+<td align="left">31/12/2019 12:00</td>
+<td align="left">/gws/nopw/j04/eddystore/stations/Balmoral/projects/Balmoral.eddypro</td>
+</tr>
+<tr class="even">
+<td align="left"><!--- } --></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="create-a-processing-job" class="section level2">
+<h2>Create a processing job</h2>
+<p>Next, we create a processing job which can be run on the queueing system on JASMIN called “LOTUS”. To do this, we use the <code>eddystore</code> function <code>createJob</code>, giving the name of the file to be corrected and the pathname of the station directory. The arguments to the <code>createJob</code> function are the stationID, the processing (procID) in case there are multiple gas combinations that require more than one run of eddypro, the start and end dates of the period to be processed, and the number of processors to use. This last depends on the length of the period, but for long periods, we see a speed-up when using up to 200 processors. For shorter periods, the overhead in splitting the job up many times becomes excessive, and using many processors does not help. Some trial and error is still needed, starting with smaller values (4, 8, 16, 32 …).</p>
+<!--- { createJob -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># station for processing run</span>
+stationID_proc &lt;-<span class="st"> &quot;Balmoral&quot;</span>
+<span class="co"># processing configuration for processing run</span>
+procID_proc &lt;-<span class="st"> &quot;CO2_H2O&quot;</span>
+<span class="co"># start/end dates for processing run as character strings</span>
+startDate_period &lt;-<span class="st"> &quot;2018-07-03 00:00&quot;</span>
+endDate_period   &lt;-<span class="st"> &quot;2019-01-31 23:30&quot;</span>
+<span class="co"># and convert to POSIX time format</span>
+startDate_period &lt;-<span class="st"> </span><span class="kw">as.POSIXct</span>(<span class="kw">strptime</span>(startDate_period, <span class="st">&quot;%Y-%m-%d %H:%M&quot;</span>), <span class="dt">tz =</span> <span class="st">&quot;UTC&quot;</span>)
+endDate_period   &lt;-<span class="st"> </span><span class="kw">as.POSIXct</span>(<span class="kw">strptime</span>(endDate_period,   <span class="st">&quot;%Y-%m-%d %H:%M&quot;</span>), <span class="dt">tz =</span> <span class="st">&quot;UTC&quot;</span>)
+<span class="co"># number of procesors to use</span>
+nProcessors &lt;-<span class="st"> </span><span class="dv">4</span>
+
+myJob &lt;-<span class="st"> </span><span class="kw">createJob</span>(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors)</code></pre></div>
+<!--- } -->
+</div>
+<div id="run-a-processing-job" class="section level2">
+<h2>Run a processing job</h2>
+<!--- { run_job -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">myJob &lt;-<span class="st"> </span><span class="kw">runJob</span>(myJob)
+<span class="co"># check for error on submission</span>
+myJob<span class="op">$</span>err</code></pre></div>
+<!--- } -->
+<p><code>myJob$err</code> should return zero if successfully submitted.</p>
+<p>We can monitor progress within R using <code>checkJobCompleted</code> and related functions:</p>
+<!--- { check_job_r -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">checkJobRunning</span>(myJob<span class="op">$</span>job_name)
+<span class="kw">checkJobCompleted</span>(myJob<span class="op">$</span>job_name)
+<span class="kw">checkJobcheckJobFailed</span>(myJob<span class="op">$</span>job_name)</code></pre></div>
+<!--- } -->
+<p>or at the linux command line, we can monitor progress using <code>bjobs</code>:</p>
+<!--- { check_job -->
+<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">bjobs</span> -a</code></pre></div>
+<!--- } -->
+<p>which returns either <code>RUN</code> (still running), <code>EXIT</code> (failed and stopped), or <code>DONE</code> (completed successfully).</p>
+</div>
+<div id="output" class="section level2">
+<h2>Output</h2>
+<p>Finally we collect all the output files produced by the individual processors and concatenate them together with the function <code>get_essential_output_df</code>:</p>
+<!--- { concat_output -->
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">df_essn &lt;-<span class="st"> </span><span class="kw">get_essential_output_df</span>(myJob<span class="op">$</span>job_name, myJob<span class="op">$</span>station_dir)
+<span class="kw">dim</span>(df_essn)
+<span class="kw">str</span>(df_essn)</code></pre></div>
+<!--- } -->
+<p>So far, this is only done for “essentials” output, but can be extended to other outputs.</p>
+</div>
+</div>
+<div id="automatic-processing-using-dropbox" class="section level1">
+<h1>Automatic processing using dropbox</h1>
+<p>An alternative way of seting up processing jobs, once the raw data and project/metadata/biomet files have been uploaded, is to use dropbox.<br />
+A dropbox folder can be shared with users <a href="https://www.dropbox.com/home/eddystore_jobs" class="uri">https://www.dropbox.com/home/eddystore_jobs</a> where they can place job request files. These must be named <code>df_job_requests.csv</code> and have a fixed file format with <code>user_email, job_name, siteID, stationID, procID, startDate, endDate, nProcessors</code>. An example is shown below, with two jobs, given arbitrary (but unique) job names:</p>
+<p>user_email,job_name,siteID,stationID,procID,startDate,endDate,nProcessors <a href="mailto:plevy@ceh.ac.uk">plevy@ceh.ac.uk</a>,JR0015,EB,EasterBush,CO2_H2O,01/07/2008 00:00,04/07/2008 23:30,4 <a href="mailto:plevy@ceh.ac.uk">plevy@ceh.ac.uk</a>,JR0016,Balmoral,Balmoral,CO2_H2O,10/07/2018 00:00,14/07/2018 23:30,4</p>
+<p>Currently, the system checks for new job requests once per hour (at 10 past) and creates and runs these jobs. This could be e.g. every 5 minutes when the system is live. Output is passed to the group workspace <a href="http://gws-access.ceda.ac.uk/public/eddystore/">public folder</a> where any error messages are shown and the concatenated “essentials” output file can be downloaded when the job is completed. A web interface will be produced which writes these job request files, via drop-down menus and selecting from available data.</p>
+</div>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
