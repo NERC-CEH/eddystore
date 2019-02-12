@@ -1,7 +1,213 @@
 ---
 layout: page
-title: Using eddystore via the command line
-description: Using eddystore via the command line.
+title: Eddystore: A brief user guide
+author: Peter Levy
+description: Overview of how to access eddystore
 ---
 
-The user guide is available [here](pages/use_eddystore1.html).
+
+# Introduction
+Eddystore is a system for parallel processing of eddy covariance data on JASMIN. In this document, I demonstrate how to run it.
+
+
+# Manually setting up processing jobs using `eddystore` on JASMIN
+
+## Log in
+See the general JASMIN [help pages](https://help.jasmin.ac.uk/category/158-getting-started) for how to set up connections and get started. When you have an account, connect to the JASMIN login server using ssh (ssh, PuTTY or MobaXterm etc.).  From a windows PC, you will need Pageant running with a private key loaded.
+
+<!--- { login -->
+
+```bash
+ssh -A -X jasmin-login1.ceda.ac.uk
+ssh -A -X jasmin-sci5.ceda.ac.uk
+```
+<!--- } -->
+
+Change to the eddystore workspace directory and run R with:
+
+<!--- { cd -->
+
+```bash
+cd /gws/nopw/j04/eddystore
+R
+```
+<!--- } -->
+
+## Install
+On the first time of use, the eddystore R package will need to be installed within R from github with the following lines:
+
+<!--- { install -->
+
+```r
+library(devtools)
+install_github("NERC-CEH/eddystore", auth_token = "cf75f3ae2091f58e6dd664ce9031bee3aa98f0f8")
+library(eddystore)
+```
+<!--- } -->
+
+Thereafter, we need only load the package with
+
+<!--- { startup -->
+
+```r
+library(eddystore)
+```
+<!--- } -->
+
+and help is available in the standard manner in R:
+
+<!--- { help -->
+
+```r
+# for the index
+?eddystore
+# and e.g.
+?createJob
+```
+<!--- } -->
+
+## Directory structure
+Data is organised by **station**, a single eddy covariance system measuring a fixed set of gases at a site.
+There could be multiple stations at a single **site** (inter-comparison campaigns, multiple intrument setups on the same mast etc.) The configuration of a station may change over time, so may require multiple eddypro **project** files (.eddypro) over time. Stations must have a unique name, and sit within the stations directory in the eddystore home stations. 
+Data is organised with a fixed structure within each station directory
+For example, the *Balmoral* station would have the following sub-directories:
+
+<!--- { paths -->
+
+```sh
+ # biomet data, if using these
+/gws/nopw/j04/eddystore/stations/Balmoral/biomet
+ # .metadata file
+/gws/nopw/j04/eddystore/stations/Balmoral/metadata  
+ # output files
+/gws/nopw/j04/eddystore/stations/Balmoral/output  
+ # .eddypro project files
+/gws/nopw/j04/eddystore/stations/Balmoral/projects  
+ # raw high frequency time series files (e.g. 10 Hz sonic and IRGA data)
+/gws/nopw/j04/eddystore/stations/Balmoral/raw_files
+ # and these should be subdivided at least by year e.g.
+/gws/nopw/j04/eddystore/stations/Balmoral/raw_files/2018
+/gws/nopw/j04/eddystore/stations/Balmoral/raw_files/2019
+```
+<!--- } -->
+
+The raw data needs to be uploaded by SCP or rsync, and this is the time consuming step if there are GB of data. Project files (.eddypro), metadata, and biomet data (if this is used) needs to be uploaded to the corresponding sub-directories.
+
+## Changing file paths
+Assuming an .eddypro project file was created on a Windows version of eddypro, the file paths referred to within the file need to be updated to refer to the correct paths on JASMIN. To do this, we can use the `convertProjectPath` function in `eddystore`, giving the name of the file to be corrected and the pathname of the station directory.
+
+<!--- { convertProjectPath -->
+
+```r
+# convert file paths in project file to eddystore locations
+eddyproProjectPathName <- "/gws/nopw/j04/eddystore/stations/Balmoral/projects/Balmoral.eddypro"
+station_dir            <- "/gws/nopw/j04/eddystore/stations/Balmoral"
+convertProjectPath(eddyproProjectPathName, station_dir)
+```
+<!--- } -->
+
+`eddyproProjectPathName` will have its paths updated, and a back-up copy of the original file written to `projects/tmp_prj/Balmoral.eddypro`.
+
+## Check / edit the project file table
+The file `/gws/nopw/j04/eddystore/eddystore_projects/df_eddystore_projects.csv` contains the information describing which project files apply at which stations over which time periods.  This allows eddystore to break a long time period down into sub-intervals for parallel processing, using the correct project file for each interval. If there is only one project file for a station, then this is trivially simple. 
+
+The [project file table](https://raw.githubusercontent.com/NERC-CEH/eddystore_projects/master/df_eddystore_projects.csv) is in a [github repository](https://github.com/NERC-CEH/eddystore_projects). For now, we can edit the file on JASMIN directly so it correctly specifies the appropriate project file(s) for the raw data to be processed.  As an example for the Balmoral station:
+
+
+<!--- { make_table -->
+
+siteID     stationID   procID    startDate          endDate            project_filepath                                                    
+---------  ----------  --------  -----------------  -----------------  --------------------------------------------------------------------
+Balmoral   Balmoral    CO2_H2O   03/07/2018 00:00   31/12/2019 12:00   /gws/nopw/j04/eddystore/stations/Balmoral/projects/Balmoral.eddypro 
+<!--- } -->
+
+
+## Create a processing job
+Next, we create a processing job which can be run on the queueing system on JASMIN called "LOTUS".
+To do this, we use the `eddystore` function `createJob`, giving the name of the file to be corrected and the pathname of the station directory.
+The arguments to the `createJob` function are the stationID, the processing (procID) in case there are multiple gas combinations that require more than one run of eddypro, the start and end dates of the period to be processed, and the number of processors to use. This last depends on the length of the period, but for long periods, we see a speed-up when using up to 200 processors.  For shorter periods, the overhead in splitting the job up many times becomes excessive, and using many processors does not help. Some trial and error is still needed, starting with smaller values (4, 8, 16, 32 ...).
+
+<!--- { createJob -->
+
+```r
+# station for processing run
+stationID_proc <- "Balmoral"
+# processing configuration for processing run
+procID_proc <- "CO2_H2O"
+# start/end dates for processing run as character strings
+startDate_period <- "2018-07-03 00:00"
+endDate_period   <- "2019-01-31 23:30"
+# and convert to POSIX time format
+startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
+endDate_period   <- as.POSIXct(strptime(endDate_period,   "%Y-%m-%d %H:%M"), tz = "UTC")
+# number of procesors to use
+nProcessors <- 4
+
+myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors)
+```
+<!--- } -->
+
+
+## Run a processing job
+
+<!--- { run_job -->
+
+```r
+myJob <- runJob(myJob)
+# check for error on submission
+myJob$err
+```
+<!--- } -->
+
+`myJob$err` should return zero if successfully submitted.
+
+We can monitor progress within R using `checkJobCompleted` and related functions:
+
+<!--- { check_job_r -->
+
+```r
+checkJobRunning(myJob$job_name)
+checkJobCompleted(myJob$job_name)
+checkJobcheckJobFailed(myJob$job_name)
+```
+<!--- } -->
+
+or at the linux command line, we can monitor progress using `bjobs`:
+
+<!--- { check_job -->
+
+```sh
+bjobs -a
+```
+<!--- } -->
+
+which returns either `RUN` (still running), `EXIT` (failed and stopped), or `DONE` (completed successfully).
+
+## Output
+Finally we collect all the output files produced by the individual processors and concatenate them together with the function `get_essential_output_df`:
+
+<!--- { concat_output -->
+
+```r
+df_essn <- get_essential_output_df(myJob$job_name, myJob$station_dir)
+dim(df_essn)
+str(df_essn)
+```
+<!--- } -->
+
+So far, this is only done for "essentials" output, but can be extended to other outputs.
+
+
+# Automatic processing using dropbox
+An alternative way of seting up processing jobs, once the raw data and project/metadata/biomet files have been uploaded, is to use dropbox.  
+A dropbox folder can be shared with users
+[https://www.dropbox.com/home/eddystore_jobs](https://www.dropbox.com/home/eddystore_jobs)
+where they can place job request files.  These must be named `df_job_requests.csv` and have a fixed file format with `user_email, job_name, siteID, stationID, procID, startDate, endDate, nProcessors`. An example is shown below, with two jobs, given arbitrary (but unique) job names:
+
+user_email,job_name,siteID,stationID,procID,startDate,endDate,nProcessors
+plevy@ceh.ac.uk,JR0015,EB,EasterBush,CO2_H2O,01/07/2008 00:00,04/07/2008 23:30,4
+plevy@ceh.ac.uk,JR0016,Balmoral,Balmoral,CO2_H2O,10/07/2018 00:00,14/07/2018 23:30,4
+
+Currently, the system checks for new job requests once per hour (at 10 past) and creates and runs these jobs. This could be e.g. every 5 minutes when the system is live.
+Output is passed to the group workspace [public folder](http://gws-access.ceda.ac.uk/public/eddystore/) where any error messages are shown and the concatenated "essentials" output file can be downloaded when the job is completed.
+A web interface will be produced which writes these job request files, via drop-down menus and selecting from available data.
