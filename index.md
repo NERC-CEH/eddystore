@@ -45,8 +45,8 @@ and help is available in the standard R manner:
 
 - [Accessing eddystore](pages/access.html)
 - [Uploading raw daw eddystore](pages/upload.html)
+- [Using eddystore via the command line](pages/use_eddystore.html)
 - [Using eddystore via a web browswer](pages/shiny.html)
-- [Using eddystore via the command line](pages/jasmin.html)
 - [How it works](pages/details.html)
 - [Background](pages/background.html)
 - [Resources](pages/resources.html)
