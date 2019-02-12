@@ -3,6 +3,9 @@ title: "Eddystore: A brief user guide for parallel processing of eddy covariance
 author: "Peter Levy"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
+# output: # for a GitPages markdown file -> web page
+  # html_document:
+    # keep_md: yes
 vignette: >
   %\VignetteIndexEntry{Eddystore}
   %\VignetteEngine{knitr::rmarkdown}
