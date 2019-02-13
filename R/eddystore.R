@@ -169,6 +169,12 @@ adjustIntervals <- function(stationID_proc, procID_proc, intervals, fname_df_pro
   df_project <- read.csv(fname_df_project, stringsAsFactors = FALSE)
   df_project$startDate <- as.POSIXct(strptime(df_project$startDate, "%d/%m/%Y %H:%M"), tz = "UTC")
   df_project$endDate   <- as.POSIXct(strptime(df_project$endDate, "%d/%m/%Y %H:%M"), tz = "UTC")
+  # trim whitespace from strings in case of accidental leading/trailing spaces
+  df_project$stationID <- str_squish(df_project$stationID)
+  stationID_proc       <- str_squish(stationID_proc)
+  df_project$procID    <- str_squish(df_project$procID)
+  procID_proc          <- str_squish(procID_proc)
+
   # subset to relevant rows of project data frame
   df_project <- subset(df_project, stationID == stationID_proc &
                          procID == procID_proc)
@@ -335,7 +341,7 @@ writeJobFile <- function(job, binpath = "/gws/nopw/j04/eddystore/eddypro-engine_
   write("#BSUB -q short-serial", file = jobFileName, append = TRUE) # this sets a maximum of 24 h run-time; use long-serial	for longer
   write("#BSUB -o %J.out", file = jobFileName, append = TRUE)
   write("#BSUB -e %J.err", file = jobFileName, append = TRUE)
-  #write("#BSUB -W 00:10", file = jobFileName, append = TRUE) # this sets an extra limit on wall time used if needed
+  write("#BSUB -W 23:00", file = jobFileName, append = TRUE) # set a 23 h limit on wall time; could be calculated based on period length and nProcessors
   write(paste0("#BSUB -J ", job$job_name, "[1-", job$nIntervals, "]"), file = jobFileName, append = TRUE)
 
   # assumes processing file is in a subdirectory of main station directory
