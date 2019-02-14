@@ -7,7 +7,7 @@ description: Overview of how to access eddystore
 
 
 # Introduction
-Eddystore is a system for parallel processing of eddy covariance data on JASMIN. In this document, I demonstrate how to run it.
+Eddystore is a system for parallel processing of eddy covariance data on JASMIN. This document gives a brief demonstration of how to run it.
 
 
 # Manually setting up processing jobs using `eddystore` on JASMIN
@@ -39,6 +39,8 @@ On the first time of use, the eddystore R package will need to be installed with
 <!--- { install -->
 
 ```r
+# install devtools if not already installed - first time only
+install.packages("devtools")
 library(devtools)
 install_github("NERC-CEH/eddystore", auth_token = "cf75f3ae2091f58e6dd664ce9031bee3aa98f0f8")
 library(eddystore)
@@ -88,6 +90,8 @@ For example, the *Balmoral* station would have the following sub-directories:
  # and these should be subdivided at least by year e.g.
 /gws/nopw/j04/eddystore/stations/Balmoral/raw_files/2018
 /gws/nopw/j04/eddystore/stations/Balmoral/raw_files/2019
+# and a directory for temporary files is needed
+/gws/nopw/j04/eddystore/stations/Balmoral/tmp  
 ```
 <!--- } -->
 
@@ -111,7 +115,7 @@ convertProjectPath(eddyproProjectPathName, station_dir)
 ## Check / edit the project file table
 The file `/gws/nopw/j04/eddystore/eddystore_projects/df_eddystore_projects.csv` contains the information describing which project files apply at which stations over which time periods.  This allows eddystore to break a long time period down into sub-intervals for parallel processing, using the correct project file for each interval. If there is only one project file for a station, then this is trivially simple. 
 
-The [project file table](https://raw.githubusercontent.com/NERC-CEH/eddystore_projects/master/df_eddystore_projects.csv) is in a [github repository](https://github.com/NERC-CEH/eddystore_projects). For now, we can edit the file on JASMIN directly so it correctly specifies the appropriate project file(s) for the raw data to be processed.  As an example for the Balmoral station:
+The [project file table](https://raw.githubusercontent.com/NERC-CEH/eddystore_projects/master/df_eddystore_projects.csv) is in a [github repository](https://github.com/NERC-CEH/eddystore_projects). For now, we can edit the file on JASMIN directly so it correctly specifies the appropriate project file(s) for the raw data to be processed.  Avoid spaces within and between character fields. As an example for the Balmoral station:
 
 
 <!--- { make_table -->
@@ -125,7 +129,7 @@ Balmoral   Balmoral    CO2_H2O   03/07/2018 00:00   31/12/2019 12:00   /gws/nopw
 ## Create a processing job
 Next, we create a processing job which can be run on the queueing system on JASMIN called "LOTUS".
 To do this, we use the `eddystore` function `createJob`, giving the name of the file to be corrected and the pathname of the station directory.
-The arguments to the `createJob` function are the stationID, the processing (procID) in case there are multiple gas combinations that require more than one run of eddypro, the start and end dates of the period to be processed, and the number of processors to use. This last depends on the length of the period, but for long periods, we see a speed-up when using up to 200 processors.  For shorter periods, the overhead in splitting the job up many times becomes excessive, and using many processors does not help. Some trial and error is still needed, starting with smaller values (4, 8, 16, 32 ...).
+The minimum arguments to the `createJob` function are the stationID, the processing (procID) in case there are multiple gas combinations that require more than one run of eddypro, the start and end dates of the period to be processed, and the number of processors to use. Optionally, it is useful to add a `job_name` field to make it identifiable later e.g "PL001". The number of processors to use depends on the length of the period, but for long periods, we see a speed-up when using up to 200 processors.  For shorter periods, the overhead in splitting the job up many times becomes excessive, and using many processors does not help. Some trial and error is still needed, starting with smaller values (4, 8, 16, 32 ...).
 
 <!--- { createJob -->
 
@@ -143,8 +147,12 @@ endDate_period   <- as.POSIXct(strptime(endDate_period,   "%Y-%m-%d %H:%M"), tz 
 # number of procesors to use
 nProcessors <- 4
 
-myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors)
+myJob <- createJob(stationID_proc, procID_proc, 
+                   startDate_period, endDate_period, 
+                   nProcessors, job_name = "Test001")
 ```
+
+Note the importance of making sure the format of the date character string *exactly* matches that specified in the `strptime` function both delimiters (/ - : etc.) and order (Y m d or vice versa).
 <!--- } -->
 
 
@@ -166,9 +174,9 @@ We can monitor progress within R using `checkJobCompleted` and related functions
 <!--- { check_job_r -->
 
 ```r
-checkJobRunning(myJob$job_name)
-checkJobCompleted(myJob$job_name)
-checkJobcheckJobFailed(myJob$job_name)
+checkJobRunning("Test001")
+checkJobCompleted("Test001")
+checkJobcheckJobFailed("Test001")
 ```
 <!--- } -->
 
@@ -177,7 +185,7 @@ or at the linux command line, we can monitor progress using `bjobs`:
 <!--- { check_job -->
 
 ```sh
-bjobs -a
+bjobs -a -J Test001
 ```
 <!--- } -->
 
