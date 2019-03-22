@@ -144,7 +144,7 @@ completedNow <- sapply(df$job_name, checkJobCompleted)
 
 # and compare with df 
 for (i in 1:length(df[,1])){
-  #i = 1
+  #i = 12
   if (completedNow[i] == TRUE & df$completed[i] == FALSE){ # check if newly completed
     df$completed[i] <- TRUE
     con <- file(paste0("/gws/nopw/j04/eddystore/public/", df$job_name[i], "_report.txt"))
@@ -156,6 +156,8 @@ for (i in 1:length(df[,1])){
     df_essn <- get_essential_output_df(df$job_name[i], df$station_dir[i])
     fname <- paste0("/gws/nopw/j04/eddystore/public/", df$job_name[i], "_essentials.csv")
     write.csv(df_essn, file = fname, row.names = FALSE)
+    fname <- paste0("/gws/nopw/j04/eddystore/public/", df$job_name[i], "_essentials.RData")
+    save(df_essn, file = fname)
     ## send a e-mail to df$user_email[i] to notify job completed
  }
 }

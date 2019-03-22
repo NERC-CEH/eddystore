@@ -102,7 +102,7 @@ convertProjectPath <- function(eddyproProjectPathName, station_dir){
 #' @export
 #' @seealso \code{\link{adjustIntervals}} for the adjusting this to match boundaries between .eddypro project files.
 #' @examples
-#' nIntervals = 4
+#' nIntervals = 2
 #' startDate_period <- "2006-07-01 00:00"
 #' endDate_period   <- "2007-12-31 23:30"
 #' startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
@@ -110,12 +110,14 @@ convertProjectPath <- function(eddyproProjectPathName, station_dir){
 #' myJob <- makeDateIntervals(startDate_period, endDate_period, nIntervals)
 
 makeDateIntervals <- function(startDate_period, endDate_period, nIntervals){
-  periodLength <- difftime(endDate_period, startDate_period, units = "days") + 1
+  periodLength <- difftime(endDate_period, startDate_period, units = "days") ## + 1
   intervalLength <- periodLength / nIntervals
+  
   # make sure periods are at least one day long, so we dont have more periods than days
-  if (nIntervals > as.integer(periodLength)) nIntervals <- min(as.integer(intervalLength), nIntervals)
+  ## do we need this?
+  ## if (nIntervals > as.integer(periodLength)) nIntervals <- min(as.integer(intervalLength), nIntervals)
   # recalculate in case nIntervals was changed
-  intervalLength <- periodLength / nIntervals
+  #intervalLength <- periodLength / nIntervals
 
   # create a sequence of dates - initially these are approximate
   startDate_interval <- seq(startDate_period, endDate_period, length = (nIntervals+1))[1:nIntervals]
@@ -152,7 +154,7 @@ makeDateIntervals <- function(startDate_period, endDate_period, nIntervals){
 #' @export
 #' @seealso \code{\link{adjustIntervals}} for the adjusting this to match boundaries between processing files.
 #' @examples
-#' stationID_proc <- "EasterBush"
+#' stationID_proc <- "Dyke"
 #' procID_proc <- "CO2_H2O"
 #' nIntervals <- 4
 #' startDate_period <- "2006-07-01 00:00"
@@ -204,8 +206,9 @@ adjustIntervals <- function(stationID_proc, procID_proc, intervals, fname_df_pro
     # if rows are not same, interval spans two or more project file configurations
     if (end_row != start_row) {
       print("The original interval spanned two project file configurations; adjusting intervals accordingly.")
-      # adjust start of this interval and end of previous interval
-      intervals$endDate[(i)]   <- df_project$endDate[(end_row)]
+      # adjust end of this interval and start of next interval
+      #intervals$endDate[(i)]   <- df_project$endDate[(end_row)]
+      intervals$endDate[(i)]   <- df_project$startDate[(end_row)] - 30*60 #   halfHour 
       intervals$startDate[i+1] <- df_project$startDate[(start_row+1)]
       v_project_filepath[i]        <- df_project$project_filepath[(start_row)]
       # intervals$endDate[(i-1)]  <- df_project$endDate[(end_row-1)]
@@ -284,13 +287,26 @@ writeProjectFiles <- function(job, job_name = "eddytest"){
     ind <- !is.na(str_match(eddyproProjectFileText, "start_date="))
     # replace with interval start date
     eddyproProjectFileText[ind] <- paste0(str_sub(eddyproProjectFileText[ind], start = 1, end = 3), 
-      "start_date=", job$startDate[i])
+      "start_date=", format(job$startDate[i], format = "%Y-%m-%d"))
+
+    # find indices where start time appears
+    ind <- !is.na(str_match(eddyproProjectFileText, "start_time="))
+    # replace with interval start time
+    eddyproProjectFileText[ind] <- paste0(str_sub(eddyproProjectFileText[ind], start = 1, end = 3), 
+      "start_time=", format(job$startDate[i], format = "%H:%M"))
     
     # find indices where end date appears
     ind <- !is.na(str_match(eddyproProjectFileText, "end_date="))
     # replace with interval end date
     eddyproProjectFileText[ind] <- paste0(str_sub(eddyproProjectFileText[ind], start = 1, end = 3), 
-      "end_date=", job$endDate[i])
+      "end_date=", format(job$endDate[i], format = "%Y-%m-%d"))
+     
+    # find indices where end time appears
+    ind <- !is.na(str_match(eddyproProjectFileText, "end_time="))
+    # replace with interval end time
+    eddyproProjectFileText[ind] <- paste0(str_sub(eddyproProjectFileText[ind], start = 1, end = 3), 
+      "end_time=", format(job$endDate[i], format = "%H:%M"))
+      
     print(paste0("Writing ", job$v_eddyproProjectFileName[i]))
     writeLines(eddyproProjectFileText, con = job$v_eddyproProjectFileName[i])
   }
@@ -515,7 +531,7 @@ get_essential_output_df <- function(job_name, station_dir){
   na.strings = c("NAN", "7999", "-7999","-999","999","9999.99", "-9999.0", "-9999.0000000000000","9999","9999","-9999")
   to_match <- paste0("eddypro_", job_name, "_job.*_essentials_")
   files_out <- list.files(path = paste0(station_dir, "/output"), pattern = to_match, full.names = TRUE)
-  df_essn <- do.call(rbind, lapply(files_out, FUN = read.csv, na.strings = na.strings, header = TRUE, stringsAsFactors = FALSE))
+  df_essn <- do.call(rbind.fill, lapply(files_out, FUN = read.csv, na.strings = na.strings, header = TRUE, stringsAsFactors = FALSE))
   df_essn$TIMESTAMP <- paste(df_essn$date, df_essn$time)
   df_essn <- within(df_essn, datect <- as.POSIXct(strptime(TIMESTAMP, "%Y-%m-%d %H:%M")))
   return(df_essn)

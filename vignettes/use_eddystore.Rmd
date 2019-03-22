@@ -112,7 +112,10 @@ Assuming an .eddypro project file was created on a Windows version of eddypro, t
 ```{r convertProjectPath, eval=FALSE, echo=TRUE, include=TRUE}
 # convert file paths in project file to eddystore locations
 eddyproProjectPathName <- "/gws/nopw/j04/eddystore/stations/Balmoral/projects/Balmoral.eddypro"
-station_dir            <- "/gws/nopw/j04/eddystore/stations/Balmoral"
+eddyproProjectPathName <- "/gws/nopw/j04/eddystore/stations/Auch_icos/projects/ICOS_UK-AMo.eddypro"
+eddyproProjectPathName <- "/gws/nopw/j04/eddystore/stations/Dyke/projects/Dyke_harvested.eddypro"
+eddyproProjectPathName <- "/gws/nopw/j04/eddystore/stations/Dyke/projects/Dyke_forested.eddypro"
+station_dir            <- "/gws/nopw/j04/eddystore/stations/Dyke"
 convertProjectPath(eddyproProjectPathName, station_dir)
 ```
 <!--- } -->
@@ -145,20 +148,22 @@ The arguments to the `createJob` function are the stationID, the processing (pro
 <!--- { createJob -->
 ```{r createJob, eval=FALSE, echo=TRUE, include=TRUE}
 # station for processing run
-stationID_proc <- "Balmoral"
+stationID_proc <- "Dyke"
 # processing configuration for processing run
 procID_proc <- "CO2_H2O"
 # start/end dates for processing run as character strings
-startDate_period <- "2018-07-03 00:00"
-endDate_period   <- "2019-01-31 23:30"
+startDate_period <- "2016-05-11 00:30"
+endDate_period   <- "2019-01-10 23:30"
 # and convert to POSIX time format
 startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
 endDate_period   <- as.POSIXct(strptime(endDate_period,   "%Y-%m-%d %H:%M"), tz = "UTC")
+period_length_days <- difftime(endDate_period, startDate_period, units = "days")
 # number of procesors to use
-nProcessors <- 4
-
-myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors)
-
+nProcessors <- 24
+print(paste(period_length_days / nProcessors, "days per processor"))
+myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors, job_name = "Dyke_MayNov_240")
+myJob
+difftime(myJob$endDate, myJob$startDate, units = "days")
 ```
 <!--- } -->
 
@@ -181,7 +186,7 @@ We can monitor progress within R using `checkJobCompleted` and related functions
 ```{r check_job_r, eval=FALSE, echo=TRUE, include=TRUE}
 checkJobRunning(myJob$job_name)
 checkJobCompleted(myJob$job_name)
-checkJobcheckJobFailed(myJob$job_name)
+checkJobFailed(myJob$job_name)
 ```
 <!--- } -->
 
@@ -203,6 +208,7 @@ Finally we collect all the output files produced by the individual processors an
 df_essn <- get_essential_output_df(myJob$job_name, myJob$station_dir)
 dim(df_essn)
 str(df_essn)
+save(df_essn, file = "df_essn.RData")
 ```
 <!--- } -->
 
