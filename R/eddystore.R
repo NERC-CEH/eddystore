@@ -355,8 +355,8 @@ writeJobFile <- function(job, binpath = "/gws/nopw/j04/eddystore/eddypro-engine_
   # write contents of bsub queue file
   writeLines("#!/bin/bash", con = jobFileName)
   write("#BSUB -q short-serial", file = jobFileName, append = TRUE) # this sets a maximum of 24 h run-time; use long-serial	for longer
-  write("#BSUB -o %J.out", file = jobFileName, append = TRUE)
-  write("#BSUB -e %J.err", file = jobFileName, append = TRUE)
+  write("#BSUB -oo R-%J-%I.out", file = jobFileName, append = TRUE)
+  write("#BSUB -eo R-%J-%I.err", file = jobFileName, append = TRUE)
   write("#BSUB -W 23:00", file = jobFileName, append = TRUE) # set a 23 h limit on wall time; could be calculated based on period length and nProcessors
   write(paste0("#BSUB -J ", job$job_name, "[1-", job$nIntervals, "]"), file = jobFileName, append = TRUE)
 
@@ -555,9 +555,9 @@ get_essential_output_df_byTime <- function(job_startTime){
   SS <- job_time_ch[6]
 
   # "essentials" output files created in a ten minute slot, hoping not on a 10-min boundary (i.e. 29 to 30 mins)
-  to_match <- paste0("eddypro_job.*_essentials_", YYYY, "-", mm, "-", dd, "T", HH, substr(MM, 1, 1))
-  list.files(path = "./stations/Balmoral/output", pattern = to_match, full.names = TRUE)
-  files_out <- list.files(path = "./stations/Balmoral/output", pattern = to_match, full.names = TRUE)
+  to_match <- paste0("eddypro_", job_name, "_job.*_essentials_", YYYY, "-", mm, "-", dd, "T", HH, substr(MM, 1, 1))
+  list.files(path = paste0(station_dir, "/output"), pattern = to_match, full.names = TRUE)
+  files_out <- list.files(path = paste0(station_dir, "/output"), pattern = to_match, full.names = TRUE)
   df_essn <- do.call(rbind, lapply(files_out, FUN = read.csv, na.strings = na.strings, header = TRUE, stringsAsFactors = FALSE))
   #dim(df_essn)
   #head(df_essn[,1:9])
