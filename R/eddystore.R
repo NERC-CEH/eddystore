@@ -449,23 +449,30 @@ runJob <- function(job){
 #' Check Status of Job on LOTUS - Check if Completed
 #'
 #' This function checks an eddypro processing job on LOTUS.
-#' For multi-processor jobs, it only checks the first-listed in the job array, 
-#' may report "DONE" before all are finished. 
+#' No longer used - better to use checkJobRunning instead
 #' @param job_name The job name identifier given in df_job_requests.
 #' @return job_status Logical, TRUE if job_status == "DONE"
 #' @export
+#' @examples
+#' completedNow <- checkJobCompleted("lastWeek_Auch_icos")
 
 checkJobCompleted <- function(job_name){
+  #job_name = "EasterBush1565867751.7725"
+  #job_name = " JRA001"
+  # bjobs -a -JlastWeek_Auch_icos
   cmd <- paste("bjobs -a -J", job_name)
   # query the job queue to get the status of the job
   bjobs_report <- system(cmd, intern = TRUE)
-  # split string on whitespace 
-  bjobs_report_ch <- str_split(bjobs_report[2], "\\s+")[[1]]
-    bjobs_report_ch
-  job_status <- bjobs_report_ch[3]
-  job_name   <- bjobs_report_ch[7]
-  job_SUBMIT_TIME <- str_c(bjobs_report_ch[8:10], collapse = " ")
-  print(paste("Job", job_name, "submitted at", job_SUBMIT_TIME, "is", job_status))  
+  if (length(bjobs_report) > 0){ # then it still exists on the bjobs list
+    # split string on whitespace 
+    l_bjobs_report <- str_split(bjobs_report, "\\s+")
+    job_status <- sapply(l_bjobs_report[-1], "[[", 3) 
+    job_name   <- sapply(l_bjobs_report[-1], "[[", 7)
+    job_SUBMIT_TIME <- str_c(l_bjobs_report[[2]][8:10], collapse = " ")
+    print(paste("Job", job_name, "submitted at", job_SUBMIT_TIME, "is", job_status))
+  } else {
+    job_status <- "DONE" # otherwise it must have finished (successfully or otherwise)
+  }  
   return(job_status == "DONE")
 }
 
@@ -494,7 +501,7 @@ checkJobFailed <- function(job_name){
 #' Check Status of Job on LOTUS - Check if Still Running
 #'
 #' This function checks an eddypro processing job on LOTUS.
-#' For multi-processor jobs, it only checks the first-listed in the job array, 
+#' For multi-processor jobs, it checks the list for the job array, 
 #' @param job_name An eddystore job_name specified by the job request
 #' @return job_status Logical, TRUE if job_status == "RUN" i.e. still running
 #' @export
@@ -503,14 +510,17 @@ checkJobRunning <- function(job_name){
   cmd <- paste("bjobs -a -J", job_name)
   # query the job queue to get the status of the job
   bjobs_report <- system(cmd, intern = TRUE)
-  # split string on whitespace 
-  bjobs_report_ch <- str_split(bjobs_report[2], "\\s+")[[1]]
-    bjobs_report_ch
-  job_status <- bjobs_report_ch[3]
-  job_name   <- bjobs_report_ch[7]
-  job_SUBMIT_TIME <- str_c(bjobs_report_ch[8:10], collapse = " ")
-  print(paste("Job", job_name, "submitted at", job_SUBMIT_TIME, "is", job_status))  
-  return(job_status == "RUN")
+  if (length(bjobs_report) > 0){ # then it still exists on the bjobs list
+    # split string on whitespace 
+    l_bjobs_report <- str_split(bjobs_report, "\\s+")
+    job_status <- sapply(l_bjobs_report[-1], "[[", 3) 
+    job_name   <- sapply(l_bjobs_report[-1], "[[", 7)
+    job_SUBMIT_TIME <- str_c(l_bjobs_report[[2]][8:10], collapse = " ")
+    print(paste("Job", job_name, "submitted at", job_SUBMIT_TIME, "is", job_status))
+  } else {
+    job_status <- "DONE" # otherwise it must have finished (successfully or otherwise)
+  } 
+  return(any(job_status == "RUN"))
 }
 
 # test function for PC, where bjobs doesnt work
@@ -531,7 +541,7 @@ get_essential_output_df <- function(job_name, station_dir){
   na.strings = c("NAN", "7999", "-7999","-999","999","9999.99", "-9999.0", "-9999.0000000000000","9999","9999","-9999")
   to_match <- paste0("eddypro_", job_name, "_job.*_essentials_")
   files_out <- list.files(path = paste0(station_dir, "/output"), pattern = to_match, full.names = TRUE)
-  df_essn <- do.call(rbind.fill, lapply(files_out, FUN = read.csv, na.strings = na.strings, header = TRUE, stringsAsFactors = FALSE))
+  df_essn <- do.call(rbind, lapply(files_out, FUN = read.csv, na.strings = na.strings, header = TRUE, stringsAsFactors = FALSE))
   df_essn$TIMESTAMP <- paste(df_essn$date, df_essn$time)
   df_essn <- within(df_essn, datect <- as.POSIXct(strptime(TIMESTAMP, "%Y-%m-%d %H:%M")))
   return(df_essn)
@@ -544,7 +554,10 @@ get_essential_output_df <- function(job_name, station_dir){
 #' @return A data frame of the concatenated essential output files from each job.
 #' @export
 
-get_essential_output_df_byTime <- function(job_startTime){
+get_essential_output_df_byTime <- function(job_name, station_dir, job_startTime){
+  #station_dir = "/gws/nopw/j04/eddystore/stations/EasterBush"
+  #job_name = "EasterBush1565863807.13643"
+  #job_startTime = "2019-08-15 11:13:54 BST"
   na.strings = c("NAN", "7999", "-7999","-999","999","9999.99", "-9999.0", "-9999.0000000000000","9999","9999","-9999")
   job_time_ch <- str_split(job_startTime, "[-: ]")[[1]]
   YYYY <- job_time_ch[1]
