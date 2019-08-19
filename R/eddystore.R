@@ -443,8 +443,8 @@ runJob <- function(job){
   cmd <- paste0("bsub < ", job$jobFileName)
   # submit the jobs and get the time to identify the output files from this batch
   job$err <- system(cmd); job$job_startTime <- Sys.time()
-  # dummy values for end and run times, to be calculated later
-  job$job_endTime <- job$job_startTime; job$job_runTime <- job$job_endTime - job$job_startTime
+  # dummy values for end time, to be calculated later
+  job$job_endTime <- job$job_startTime
   return(job)
 }
 
