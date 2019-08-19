@@ -443,6 +443,8 @@ runJob <- function(job){
   cmd <- paste0("bsub < ", job$jobFileName)
   # submit the jobs and get the time to identify the output files from this batch
   job$err <- system(cmd); job$job_startTime <- Sys.time()
+  # dummy values for end and run times, to be calculated later
+  job$job_endTime <- job$job_startTime; job$job_runTime <- job$job_endTime - job$job_startTime
   return(job)
 }
 
@@ -511,7 +513,8 @@ checkJobFailed <- function(job_name){
 #' @return job_status Logical, TRUE if job_status == "RUN" i.e. still running
 #' @export
 #' @examples
-#' checkJobRunning("lastWeek_Auch_icos")
+#' job_name <- "lastWeek_Auch_icos"
+#' checkJobRunning(job_name)
 
 checkJobRunning <- function(job_name){
   cmd <- paste("bjobs -a -J", job_name)
