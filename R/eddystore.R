@@ -16,8 +16,8 @@
 #' @return eddyproProjectPathName_new File name for project file with eddystore paths. The side effect is to write this file.
 #' @export
 #' @examples
-#' eddyproProjectPathName <- "C:/Users/plevy/Documents/eddystore_projects/stations/EasterBush/projects/processing2.eddypro"
-#' station_dir <- "C:/Users/plevy/Documents/eddystore_projects/stations/EasterBush"
+#' eddyproProjectPathName <- "/gws/nopw/j04/eddystore/stations/Auch_icos/projects/UK-AMo_ICOS_20190701.eddypro"
+#' station_dir <- "/gws/nopw/j04/eddystore/stations/Auch_icos"
 #' convertProjectPath(eddyproProjectPathName, station_dir)
 
 convertProjectPath <- function(eddyproProjectPathName, station_dir){
@@ -481,21 +481,26 @@ checkJobCompleted <- function(job_name){
 #' This function checks an eddypro processing job on LOTUS.
 #' For multi-processor jobs, it only checks the first-listed in the job array, 
 #' @param job_name An eddystore job_name specified by the job request
-#' @return job_status Logical, TRUE if job_status == "EXIT" i.e. failed
+#' @return job_status Logical, TRUE if all job_status == "EXIT" i.e. failed
 #' @export
+#' @examples
+#' checkJobFailed("lastWeek_Auch_icos")
 
 checkJobFailed <- function(job_name){
   cmd <- paste("bjobs -a -J", job_name)
   # query the job queue to get the status of the job
   bjobs_report <- system(cmd, intern = TRUE)
-  # split string on whitespace 
-  bjobs_report_ch <- str_split(bjobs_report[2], "\\s+")[[1]]
-    bjobs_report_ch
-  job_status <- bjobs_report_ch[3]
-  job_name   <- bjobs_report_ch[7]
-  job_SUBMIT_TIME <- str_c(bjobs_report_ch[8:10], collapse = " ")
-  print(paste("Job", job_name, "submitted at", job_SUBMIT_TIME, "is", job_status))  
-  return(job_status == "EXIT")
+  if (length(bjobs_report) > 0){ # then it still exists on the bjobs list
+    # split string on whitespace 
+    l_bjobs_report <- str_split(bjobs_report, "\\s+")
+    job_status <- sapply(l_bjobs_report[-1], "[[", 3) 
+    job_name   <- sapply(l_bjobs_report[-1], "[[", 7)
+    job_SUBMIT_TIME <- str_c(l_bjobs_report[[2]][8:10], collapse = " ")
+    print(paste("Job", job_name, "submitted at", job_SUBMIT_TIME, "is", job_status))
+  } else {
+    job_status <- "Unknown" # otherwise we don't know if it finished (successfully or otherwise)
+  } 
+  return(all(job_status == "EXIT"))
 }
 
 #' Check Status of Job on LOTUS - Check if Still Running
@@ -505,6 +510,8 @@ checkJobFailed <- function(job_name){
 #' @param job_name An eddystore job_name specified by the job request
 #' @return job_status Logical, TRUE if job_status == "RUN" i.e. still running
 #' @export
+#' @examples
+#' checkJobRunning("lastWeek_Auch_icos")
 
 checkJobRunning <- function(job_name){
   cmd <- paste("bjobs -a -J", job_name)
@@ -518,7 +525,7 @@ checkJobRunning <- function(job_name){
     job_SUBMIT_TIME <- str_c(l_bjobs_report[[2]][8:10], collapse = " ")
     print(paste("Job", job_name, "submitted at", job_SUBMIT_TIME, "is", job_status))
   } else {
-    job_status <- "DONE" # otherwise it must have finished (successfully or otherwise)
+    job_status <- "Unknown" # otherwise we don't know if it finished (successfully or otherwise)
   } 
   return(any(job_status == "RUN"))
 }
