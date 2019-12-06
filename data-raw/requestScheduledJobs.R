@@ -11,7 +11,7 @@
 rm(list=ls(all=TRUE))
 #library(devtools)
 #install_github("NERC-CEH/eddystore", auth_token = "cf75f3ae2091f58e6dd664ce9031bee3aa98f0f8")
-#library(eddystore) # not needed
+library(eddystore)
 Sys.setenv(TZ="UTC")
 nSecsPerDay <- 60*60*24
 
@@ -27,6 +27,8 @@ df$startDate <- trunc(df$startDate, units="hours") # round down to start of hour
 df$endDate   <- trunc(df$endDate,   units="hours") # round down to start of hour
 df$startDate <- format(df$startDate, "%d/%m/%Y %H:%M") # convert to character
 df$endDate   <- format(df$endDate,   "%d/%m/%Y %H:%M") # convert to character
+
+df$job_name <- paste(df$job_name, format(Sys.time(), "%Y_%m_%d_%H_%M"), sep = "_") # convert to character
 
 # get columns in fixed order - matters if anything else appends to the file
 df <- with(df, data.frame(user_email,job_name,siteID,stationID,procID,startDate,endDate,nProcessors))

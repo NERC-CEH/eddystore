@@ -1,9 +1,10 @@
 Package: eddystore
 Title: Parallel Processing Of Eddy Covariance Data On JASMIN
-Version: 0.2.1
+Version: 0.4
 Authors@R: person("Peter", "Levy", email = "plevy@ceh.ac.uk", role = c("aut", "cre"))
 Description: Parallel Processing Of Eddy Covariance Data
 Depends: R (>= 3.5.1),
+         plyr,
          dplyr,
          stringr
 License: MIT

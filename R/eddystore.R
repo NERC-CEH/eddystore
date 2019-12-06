@@ -102,7 +102,7 @@ convertProjectPath <- function(eddyproProjectPathName, station_dir){
 #' @export
 #' @seealso \code{\link{adjustIntervals}} for the adjusting this to match boundaries between .eddypro project files.
 #' @examples
-#' nIntervals = 2
+#' nIntervals = 3
 #' startDate_period <- "2006-07-01 00:00"
 #' endDate_period   <- "2007-12-31 23:30"
 #' startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
@@ -134,7 +134,7 @@ makeDateIntervals <- function(startDate_period, endDate_period, nIntervals){
   # make the end time 30 mins before start of the next interval
   # last end time stays
   for (i in 1:(nIntervals-1)){
-    endDate_interval[i]   <- startDate_interval[i+1] - 30*60 #   halfHour <- 30*60
+    endDate_interval[i]   <- startDate_interval[i+1] # make next interval end when the next one starts
   }
   #difftime(endDate_interval, startDate_interval, units = "days")
   return(list(startDate = startDate_interval, 
@@ -557,6 +557,33 @@ get_essential_output_df <- function(job_name, station_dir){
   return(df_essn)
 }
 
+#' Collate biomet output files using job name
+#'
+#' @param job_name The job name identifier given in df_job_requests.
+#' @param station_dir The path to the station directory on eddystore.
+#' @return A data frame of the concatenated biomet output files from each job.
+#' @export
+#' @examples
+#' job_name <- "eddytest"
+#' station_dir <- "/gws/nopw/j04/eddystore/stations/Lonielist"
+#' df_biom <- get_biomet_output_df(job_name, station_dir)
+#' summary(df_biom)
+#' #write.csv(df_biom, file = "./public/mcoyle/Lonielist_biomet.csv")
+
+get_biomet_output_df <- function(job_name, station_dir){
+  na.strings = c("NAN", "7999", "-7999","-999","999","9999.99", "-9999.0", "-9999.0000000000000","9999","9999","-9999")
+  to_match <- paste0("eddypro_", job_name, "_job.*_biomet_")
+#/gws/nopw/j04/eddystore/stations/Lonielist/output/eddypro_eddytest_job3_biomet_2019-10-25T102645_adv.csv.tmp
+#  to_match <- paste0("eddypro_", job_name, "_job.*_biomet_2019-10-25T10")
+  files_out <- list.files(path = paste0(station_dir, "/output"), pattern = to_match, full.names = TRUE)
+  df <- do.call(rbind.fill, lapply(files_out, FUN = read_biomet_file))
+  df$TIMESTAMP <- paste(df$date, df$time)
+  df <- within(df, datect <- as.POSIXct(strptime(TIMESTAMP, "%Y-%m-%d %H:%M")))
+  df <- distinct(df)
+  df <- arrange(df, datect)
+  return(df)
+}
+
 #' Collate essential output files using time only
 #'
 #' Note that curently "EasterBush" is hard-coded in the path - need to pass path argument
@@ -603,6 +630,26 @@ read_full_output <- function(fname){
   df <- readLines(fname)
   # remove first and third lines, leaving header (line 2) and data (line 4 onwards)
   df = df[c(-1, -3)]
+  df <- read.csv(textConnection(df), na.strings = na.strings, header = TRUE, stringsAsFactors = FALSE)
+  return(df)
+}
+
+#' Read biomet output files
+#'
+#' biomet output files are harder to read - header is on line 1, units on line 2
+#' We need to remove the units on line 2
+#' @param fname A character string for the file name
+#' @return A data frame of the biomet output file.
+#' @export
+#' @examples
+#' fname <- "/gws/nopw/j04/eddystore/stations/Lonielist/output/eddypro_eddytest_job3_biomet_2019-10-25T102645_adv.csv.tmp"
+#' df <- read_biomet_file(fname)
+
+read_biomet_file <- function(fname){
+  na.strings = c("NAN", "7999", "-7999","-999","999","9999.99", "-9999.0", "-9999.0000000000000","9999","9999","-9999")
+  df <- readLines(fname)
+  # remove second line, leaving header (line 1) and data (line 3 onwards)
+  df <- df[-2]
   df <- read.csv(textConnection(df), na.strings = na.strings, header = TRUE, stringsAsFactors = FALSE)
   return(df)
 }

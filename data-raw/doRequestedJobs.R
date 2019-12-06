@@ -18,10 +18,12 @@ library(rdrop2)
 # Providing a previous token stored in a file
 #drop_auth(rdstoken = "N:/0Peter/curr/ECsystem/eddystore/scripts/droptoken.rds")
 drop_auth(rdstoken = "/gws/nopw/j04/eddystore/scripts/droptoken.rds")
+# app_tests is temporary location for testing
+# eddystore_jobs is long term location
 new_manual_jobs <- drop_exists("eddystore_jobs/df_job_requests.csv")
 if (new_manual_jobs){
   df_manual_jobs <- drop_read_csv("eddystore_jobs/df_job_requests.csv", stringsAsFactors = FALSE)
-  drop_move("eddystore_jobs/df_job_requests.csv", "eddystore_jobs/df_job_requests_submitted.csv", verbose = FALSE)
+  drop_move("eddystore_jobs/df_job_requests.csv", "eddystore_jobs/df_job_requests_submitted.csv", verbose = TRUE)
   drop_delete("eddystore_jobs/df_job_requests.csv", verbose = FALSE)
 }
 
@@ -50,6 +52,7 @@ if (new_auto_jobs | new_manual_jobs){
   print(paste("There are", n_jobs, "new jobs to submit."))
   #summary(df)
   df$submitted <- vector(mode = "logical", length = n_jobs)
+  df$failed    <- vector(mode = "logical", length = n_jobs)
   df$completed <- vector(mode = "logical", length = n_jobs)
   # declare a list to hold job objects
   l_jobs       <- vector(mode = "list",    length = n_jobs) # declare a list for job objects
@@ -104,7 +107,7 @@ if (new_auto_jobs | new_manual_jobs){
 
   # combine all job requests in one data frame 
   l_df_jobs <- lapply(l_jobs, as.data.frame)
-  #str(l_df_jobs)
+  #str(l_jobs)
   # get first row only in each data frame
   l_df_jobs <- lapply(l_df_jobs, function(l) l[1,])
   df_jobs <- bind_rows(l_df_jobs)
@@ -121,7 +124,7 @@ if (new_auto_jobs | new_manual_jobs){
 
   # read previously submitted jobs
   # we add requested jobs to this now they have been successfully submitted
-  #df_submitted <- read.csv(file = "./jobs_submitted.csv", stringsAsFactors = FALSE)
+  #df_submitted <- read.csv(file = "/gws/nopw/j04/eddystore/jobs/jobs_submitted.csv", stringsAsFactors = FALSE)
   #load(file = "N:/0Peter/curr/ECsystem/eddystore/eddystore/jobs/jobs_submitted.RData", verbose = TRUE)
   load(file = "/gws/nopw/j04/eddystore/jobs/jobs_submitted.RData", verbose = TRUE)
 
@@ -129,42 +132,6 @@ if (new_auto_jobs | new_manual_jobs){
   # dim(df_submitted)
   # dim(df)
   # write successfully submitted jobs to file
-  save(df_submitted, file = "/gws/nopw/j04/eddystore/jobs/jobs_submitted.RData")
-} # end of code for if job requests exist in file
-####################################################
-
-
-# this could be a separate cron job
-# reload submitted jobs from file
-load(file = "/gws/nopw/j04/eddystore/jobs/jobs_submitted.RData", verbose = TRUE)
-df <- df_submitted
-# for each submitted job, check if now completed
-## only recent jobs listed? Returns NA if job_name does not appear?
-completedNow <- sapply(df$job_name, checkJobCompleted)
-
-# and compare with df 
-for (i in 1:length(df[,1])){
-  #i = 12
-  if (completedNow[i] == TRUE & df$completed[i] == FALSE){ # check if newly completed
-    df$completed[i] <- TRUE
-    con <- file(paste0("/gws/nopw/j04/eddystore/public/", df$job_name[i], "_report.txt"))
-    txt <- paste("Job", df$job_name[i], "was completed successfully.")
-    writeLines(txt, con)
-    close(con)
-    # concatenate output and write to /public
-    #str(df_essn)
-    df_essn <- get_essential_output_df(df$job_name[i], df$station_dir[i])
-    fname <- paste0("/gws/nopw/j04/eddystore/public/", df$job_name[i], "_essentials.csv")
-    write.csv(df_essn, file = fname, row.names = FALSE)
-    fname <- paste0("/gws/nopw/j04/eddystore/public/", df$job_name[i], "_essentials.RData")
-    save(df_essn, file = fname)
-    ## send a e-mail to df$user_email[i] to notify job completed
- }
+  write.csv(df_submitted, file = "/gws/nopw/j04/eddystore/jobs/jobs_submitted.csv")
+  save(df_submitted,      file = "/gws/nopw/j04/eddystore/jobs/jobs_submitted.RData")
 }
-
-# write submitted jobs to file with updated completion status
-df_submitted <- df
-save(df_submitted, file = "/gws/nopw/j04/eddystore/jobs/jobs_submitted.RData")
-
-##other thingsz
-#merge with met, plot, gap-fill, sum
