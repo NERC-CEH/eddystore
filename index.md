@@ -18,16 +18,15 @@ eddystore comprises several components:
   - R scripts which carry these instructions out on a scheduled basis as cron jobs
 - a shiny app which allows jobs to be run on jasmin via a web browser
 
-Processing jobs can be created manually via a [web browser](https://github.com/NERC-CEH/eddystore), or run automatically on a scheduled basis.
+Processing jobs can be created manually via a [web browser](https://shiny-prod.nerc-lancaster.ac.uk:8443/plevy/eddystore_app/), or run automatically on a scheduled basis.
 The web interface allows a processing job to be submitted for a particular site and time period.
 Raw data can be uploaded via dropbox, or preferably directly to eddystore via SCP or rsync with a JASMIN account.
 Output data can be [downloaded](http://gws-access.ceda.ac.uk/public/eddystore/) via a web browser or with SCP.
 
-In order to use eddystore via the web browser interface, you need to do the following:
-- [apply](https://www.ceh.ac.uk/) for eddystore access.
+In order to use eddystore via the web browser interface, you need to apply for access at <eddystore@ceh.ac.uk>.
 
 In order to use eddystore with full flexibility from a Linux command-line interface, you need to do the following:
-- [apply](https://www.ceh.ac.uk/) for eddystore access, and also
+- apply for access at <eddystore@ceh.ac.uk>, and also
 - [apply](https://accounts.jasmin.ac.uk/) for a JASMIN account, with access to the eddystore group workspace.
 
 In the latter case (via the Linux command-line interface), eddystore works as a set of functions within R.
@@ -50,6 +49,9 @@ and help is available in the standard R manner:
 - [How it works](pages/details.html)
 - [Background](pages/background.html)
 - [Resources](pages/resources.html)
+
+Splitting the processing into a number of jobs run in parallel speeds the computation time, approximately in line with the graph below, but will be greater with longer runs.
+![speedUp](images/speedUp.png?raw=true)
 
 If anything here is confusing, or if I've missed important details, please
 [submit an issue](https://github.com/NERC-CEH/eddystore/issues).
