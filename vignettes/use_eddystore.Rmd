@@ -55,7 +55,7 @@ On the first time of use, the eddystore R package will need to be installed with
 <!--- { install -->
 ```{r install, eval=FALSE, echo=TRUE, include=TRUE}
 library(devtools)
-install_github("NERC-CEH/eddystore", auth_token = "cf75f3ae2091f58e6dd664ce9031bee3aa98f0f8")
+install_github("NERC-CEH/eddystore", auth_token = "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")
 library(eddystore)
 ```
 <!--- } -->
@@ -148,20 +148,21 @@ The arguments to the `createJob` function are the stationID, the processing (pro
 <!--- { createJob -->
 ```{r createJob, eval=FALSE, echo=TRUE, include=TRUE}
 # station for processing run
-stationID_proc <- "Dyke"
+stationID_proc <- "EasterBush"
 # processing configuration for processing run
 procID_proc <- "CO2_H2O"
 # start/end dates for processing run as character strings
-startDate_period <- "2016-05-11 00:30"
-endDate_period   <- "2019-01-10 23:30"
+startDate_period <- "2010-05-11 00:30"
+endDate_period   <- "2010-05-16 23:30"
 # and convert to POSIX time format
 startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
 endDate_period   <- as.POSIXct(strptime(endDate_period,   "%Y-%m-%d %H:%M"), tz = "UTC")
 period_length_days <- difftime(endDate_period, startDate_period, units = "days")
 # number of procesors to use
-nProcessors <- 24
+nProcessors <- 5
 print(paste(period_length_days / nProcessors, "days per processor"))
-myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, nProcessors, job_name = "Dyke_MayNov_240")
+myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, 
+  nProcessors, job_name = "Test_Dec2022")
 myJob
 difftime(myJob$endDate, myJob$startDate, units = "days")
 ```
@@ -190,11 +191,11 @@ checkJobFailed(myJob$job_name)
 ```
 <!--- } -->
 
-or at the linux command line, we can monitor progress using `bjobs`:
+or at the linux command line, we can monitor progress using `squeue`:
 
 <!--- { check_job -->
 ```{sh check_job, eval=FALSE, echo=TRUE, include=TRUE}
-bjobs -a
+squeue -u username
 ```
 <!--- } -->
 

@@ -347,25 +347,28 @@ writeJobFile <- function(job, binpath = "/gws/nopw/j04/eddystore/eddypro-engine_
                             switch_OS = "-s linux",
                             eddystore_path = "/gws/nopw/j04/eddystore", 
                             user_email = "plevy@ceh.ac.uk"){
-  # make a unique name for a bsub queue file
+  # make a unique name for a slurm queue file
   job_writeTime <- str_replace_all(Sys.time(), c(" " = "_", ":" = "_", "GMT" = ""))
   jobFileName <- paste0(eddystore_path, "/jobs/", job$station_name, "_", job_writeTime, "_eddystoreJob.sh")
   con <- file(jobFileName)
   
-  # write contents of bsub queue file
+  # write contents of slurm queue file
   writeLines("#!/bin/bash", con = jobFileName)
-  write("#BSUB -q short-serial", file = jobFileName, append = TRUE) # this sets a maximum of 24 h run-time; use long-serial	for longer
-  write("#BSUB -oo R-%J-%I.out", file = jobFileName, append = TRUE)
-  write("#BSUB -eo R-%J-%I.err", file = jobFileName, append = TRUE)
-  write("#BSUB -W 23:00", file = jobFileName, append = TRUE) # set a 23 h limit on wall time; could be calculated based on period length and nProcessors
-  write(paste0("#BSUB -J ", job$job_name, "[1-", job$nIntervals, "]"), file = jobFileName, append = TRUE)
+  # this sets a maximum of 24 h run-time; use long-serial	for longer
+  write("#SBATCH -p short-serial", file = jobFileName, append = TRUE) 
+  write("#SBATCH -o R_%A_%a.out", file = jobFileName, append = TRUE)
+  write("#SBATCH -e R_%A_%a.err", file = jobFileName, append = TRUE)
+  # set a 23 h limit on wall time; could be calculated based on period length and nProcessors
+  write("#SBATCH -t 23:00:00", file = jobFileName, append = TRUE) 
+  write(paste0("#SBATCH --job-name=", job$job_name), file = jobFileName, append = TRUE)
+  write(paste0("#SBATCH --array=1-", job$nIntervals), file = jobFileName, append = TRUE)
 
   # assumes processing file is in a subdirectory of main station directory
   switch_env <- paste("-e", job$station_dir)
  
   # make job array of processing file names
   eddyproProcArray <- paste0(tools::file_path_sans_ext(job$baseProjectFileName), 
-        "_${LSB_JOBINDEX}", ".eddypro")        
+        "_${SLURM_ARRAY_TASK_ID}", ".eddypro")        
   cmd <- paste(binpath, switch_OS, switch_env, eddyproProcArray)
   write(cmd, file = jobFileName, append = TRUE)
   on.exit(close(con))
@@ -440,9 +443,18 @@ createJob <- function(stationID_proc, procID_proc, startDate_period, endDate_per
 #' myJob <- runJob(myJob)
 
 runJob <- function(job){
-  cmd <- paste0("bsub < ", job$jobFileName)
+  # cmd <- paste0("sbatch ", myJob$jobFileName)
   # submit the jobs and get the time to identify the output files from this batch
-  job$err <- system(cmd); job$job_startTime <- Sys.time()
+  # job$err <- system(cmd); job$job_startTime <- Sys.time()
+  job$job_id <- system2(command = "sbatch", args = myJob$jobFileName, 
+    stdout = TRUE, stderr = TRUE)  
+  job$job_startTime <- Sys.time()
+  # Split into "Submitted" "batch" "job" "26898497"
+  x <- str_split(job$job_id, "\\s+") 
+  # extract job id
+  job$job_id <- x[[1]][4]
+  # seems to give NULL not 0
+  job$err <- attr(job$job_id, "status")
   # dummy values for end time, to be calculated later
   job$job_endTime <- job$job_startTime
   return(job)
@@ -458,13 +470,29 @@ runJob <- function(job){
 #' @examples
 #' completedNow <- checkJobCompleted("lastWeek_Auch_icos")
 
-checkJobCompleted <- function(job_name){
-  #job_name = "EasterBush1565867751.7725"
-  #job_name = " JRA001"
-  # bjobs -a -JlastWeek_Auch_icos
-  cmd <- paste("bjobs -a -J", job_name)
+checkJobCompleted <- function(job){
+  # job_name = "EasterBush1565867751.7725"
+  # job_name = " JRA001"
+  # squeue -n lastWeek_Auch_icos
+  cmd <- paste("squeue -j", job$job_id)
   # query the job queue to get the status of the job
   bjobs_report <- system(cmd, intern = TRUE)
+  ##* WIP - need to parse squeue output:
+  # > l_bjobs_report
+# [[1]]
+# [1] ""                 "JOBID"            "PARTITION"        "NAME"
+# [5] "USER"             "ST"               "TIME"             "NODES"
+# [9] "NODELIST(REASON)"
+
+# [[2]]
+# [1] ""           "26900004_2" "short-ser"  "Test_Dec"   "bkruijt"
+# [6] "R"          "2:17"       "1"          "host566"
+
+# [[3]]
+# [1] ""           "26900004_1" "short-ser"  "Test_Dec"   "bkruijt"
+# [6] "R"          "2:17"       "1"          "host564"
+
+# lines below are out of date
   if (length(bjobs_report) > 0){ # then it still exists on the bjobs list
     # split string on whitespace 
     l_bjobs_report <- str_split(bjobs_report, "\\s+")
