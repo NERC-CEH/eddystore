@@ -8,7 +8,7 @@ description: Uploading raw to eddystore data.
 ### Setting up a new site for processing
 
 1. Apply for access to the eddystore group workspace (https://accounts.jasmin.ac.uk/services/group_workspaces/eddystore/).
-See [here](pages/access.html).
+See [here](access.html).
 
 2. Check you can access the disk and directory:
 ```

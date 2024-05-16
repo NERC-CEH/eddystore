@@ -30,7 +30,21 @@ In order to use eddystore with full flexibility from a Linux command-line interf
 - [apply](https://accounts.jasmin.ac.uk/) for a JASMIN account, with access to the eddystore group workspace.
 
 In the latter case (via the Linux command-line interface), eddystore works as a set of functions within R.
-To install the eddystore R package from github, type the following at the R command prompt:
+
+### Running R on JASMIN
+To run R, you first need to login to one of the sci- machines from the login server e.g.
+
+`ssh -A -X sci1.jasmin.ac.uk`
+
+You then need to load a software environment which gives access to an installation of R. This is most easily done by loading the default "jasr" environment:
+
+`module load jasr`
+
+and thereafter, R is available from the command line:
+`R`
+
+### Installing the eddystore R package
+Once you have R working, you can install the eddystore R package from GitHub, by typing the following at the R command prompt:
 
     library(devtools)
     install_github("NERC-CEH/eddystore", auth_token = "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")
