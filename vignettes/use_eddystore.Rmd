@@ -55,7 +55,7 @@ On the first time of use, the eddystore R package will need to be installed with
 <!--- { install -->
 ```{r install, eval=FALSE, echo=TRUE, include=TRUE}
 library(devtools)
-install_github("NERC-CEH/eddystore", auth_token = "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")
+install_github("NERC-CEH/eddystore", auth_token = "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")
 library(eddystore)
 ```
 <!--- } -->
@@ -162,7 +162,8 @@ period_length_days <- difftime(endDate_period, startDate_period, units = "days")
 nProcessors <- 5
 print(paste(period_length_days / nProcessors, "days per processor"))
 myJob <- createJob(stationID_proc, procID_proc, startDate_period, endDate_period, 
-  nProcessors, job_name = "Test_Dec2022")
+  binpath = "/gws/nopw/j04/eddystore/eddypro/eddypro-engine_7.0.9/bin/linux/eddypro_rp",
+  nProcessors, job_name = "Test_Jan2023")
 myJob
 difftime(myJob$endDate, myJob$startDate, units = "days")
 ```

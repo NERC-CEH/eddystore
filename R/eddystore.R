@@ -156,7 +156,7 @@ makeDateIntervals <- function(startDate_period, endDate_period, nIntervals){
 #' @examples
 #' stationID_proc <- "Dyke"
 #' procID_proc <- "CO2_H2O"
-#' nIntervals <- 4
+#' nIntervals <- 12
 #' startDate_period <- "2006-07-01 00:00"
 #' endDate_period   <- "2007-12-31 23:30"
 #' startDate_period <- as.POSIXct(strptime(startDate_period, "%Y-%m-%d %H:%M"), tz = "UTC")
@@ -185,8 +185,8 @@ adjustIntervals <- function(stationID_proc, procID_proc, intervals, fname_df_pro
 
   # check if there are more .eddypro project files needed than intervals requested
   if (length(df_project[,1]) > intervals$nIntervals){
-    #print(paste("You need to set nIntervals to at least", length(df_project[,1])))
-    stop(paste("You need to set nIntervals to at least", length(df_project[,1])))
+    print(paste("You may need to set nIntervals to at least", length(df_project[,1])))
+    # stop(paste("You need to set nIntervals to at least", length(df_project[,1])))
   }
   
   for (i in 1:intervals$nIntervals){
@@ -362,6 +362,9 @@ writeJobFile <- function(job, binpath = "/gws/nopw/j04/eddystore/eddypro-engine_
   write("#SBATCH -t 23:00:00", file = jobFileName, append = TRUE) 
   write(paste0("#SBATCH --job-name=", job$job_name), file = jobFileName, append = TRUE)
   write(paste0("#SBATCH --array=1-", job$nIntervals), file = jobFileName, append = TRUE)
+
+  # force delayed start times for each job
+  write(paste0("sleep $((SLURM_ARRAY_TASK_ID*10))"), file = jobFileName, append = TRUE)
 
   # assumes processing file is in a subdirectory of main station directory
   switch_env <- paste("-e", job$station_dir)
