@@ -33,7 +33,7 @@ In the latter case (via the Linux command-line interface), eddystore works as a 
 To install the eddystore R package from github, type the following at the R command prompt:
 
     library(devtools)
-    install_github("NERC-CEH/eddystore", auth_token = "cf75f3ae2091f58e6dd664ce9031bee3aa98f0f8")
+    install_github("NERC-CEH/eddystore", auth_token = "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")
     library(eddystore)
 
 and help is available in the standard R manner:
