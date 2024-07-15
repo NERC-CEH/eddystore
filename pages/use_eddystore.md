@@ -40,9 +40,8 @@ On the first time of use, the eddystore R package will need to be installed with
 
 ```r
 # install devtools if not already installed - first time only
-install.packages("devtools")
-library(devtools)
-install_github("NERC-CEH/eddystore", auth_token = "cf75f3ae2091f58e6dd664ce9031bee3aa98f0f8")
+library(remotes)
+install_github("NERC-CEH/eddystore")
 library(eddystore)
 ```
 <!--- } -->
